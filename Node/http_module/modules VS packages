@@ -1,0 +1,66 @@
+# Difference Between Modules and Packages in Node.js
+
+| Module | Package |
+|----------|----------|
+| A **single JavaScript file** that contains code and exports functionality. | A **collection of modules** bundled together. |
+| Created using `module.exports` or `export`. | Usually contains a `package.json` file. |
+| Can be a built-in module like `fs`, `http`, `path`. | Can be installed from npm using `npm install`. |
+| Represents one unit of functionality. | Represents a complete library/application. |
+| Example: `math.js`, `fs`, `http`. | Example: `express`, `mongoose`, `nodemon`. |
+
+## Module Example
+
+### math.js
+
+```js
+function add(a, b) {
+    return a + b;
+}
+
+module.exports = add;
+```
+
+### app.js
+
+```js
+const add = require('./math');
+
+console.log(add(2, 3)); // 5
+```
+
+Here, `math.js` is a **module**.
+
+---
+
+## Package Example
+
+When you run:
+
+```bash
+npm install express
+```
+
+A folder named `express` is added inside `node_modules`.
+
+`express` contains:
+- Multiple modules/files
+- `package.json`
+- Dependencies
+- Documentation
+
+So **Express is a package**.
+
+---
+
+## Easy Way to Remember
+
+📄 **Module = Single file of code**
+
+📦 **Package = Collection of modules + package.json**
+
+### Examples
+
+- `fs` → Module
+- `http` → Module
+- `express` → Package
+- `mongoose` → Package
