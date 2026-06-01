@@ -1,0 +1,11 @@
+# Use this workspace to collaborate
+workspace:
+  id: b1f53b79-69ff-4657-8038-70d487952720
+
+localResources:
+  docs:
+    - ..\Node\express\morgan\morgan.md
+    - ..\Node\http_module\http_code_4XX.md
+    - ..\Node\http_module\http_code_101.md
+    - ..\Node\http_module\http_code_3XX.md
+.md
