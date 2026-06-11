@@ -4,6 +4,7 @@ const db = require('./config/mongoose');
 const userModel=require('./models/user');
 const bcrypt = require('bcrypt');
 var jwt = require('jsonwebtoken');
+const isLoggedIn=require('./middlewares/isLoggedIn');
 
 const cookieparser=require('cookie-parser');
 
@@ -45,7 +46,11 @@ app.post('/create',function(req,res){
             res.redirect('/');
         });
     });
+})
 
+app.get('/profile',isLoggedIn,async function(req,res){
+    const data=await userModel.findOne({email :req.user.email})
+    res.render('profile',{data});
 })
 
 app.get('/login',function(req,res){
@@ -74,7 +79,15 @@ app.get('/logout',function(req,res){
     res.redirect('/');
 })
 
-
+// function isLoggedIn(req,res,next){
+//     if(req.cookies.token==null){
+//         console.log('user must be logged in')
+//         return res.redirect('/');
+//     } 
+//     const data = jwt.verify(req.cookies.token, 'secret');
+//     req.user=data;
+//     next();
+// }
 
 app.listen(8000,()=>{
     console.log('server is live at port 8000');
