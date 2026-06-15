@@ -1,4 +1,4 @@
-//callback and sync api
+//using callback function , asynchronously
 const fs = require('fs');
 
 fs.writeFile('message.txt', "hello world",function(err){

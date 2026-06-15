@@ -51,7 +51,6 @@ app.get('/gentoken', function(req, res) {
 });
 
 app.get('/verify', function(req, res) {
-
     try {
         const data = jwt.verify(req.cookies.token, 'donttell');
         res.send(data);

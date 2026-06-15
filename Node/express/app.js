@@ -10,6 +10,9 @@ app.use(function(req,res,next){
     console.log('kaise ho');
     next();
 })
+//app.use mai jo bhoi likha jata hai vo middle ware hota h . koi bhi route chal nai sai pehle ye middle ware chalen gai . agar inn mai next() use nhi kia to aage ka kaam nai hoga aur code whi stuck ho jaaye ga
+
+//para by : Alt + z
 
 app.get('/',function(req,res){
     res.send('welcome');
