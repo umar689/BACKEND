@@ -1,0 +1,345 @@
+# Optional Chaining (`?.`) in JavaScript
+
+## Introduction
+
+Optional Chaining (`?.`) JavaScript ka ek feature hai jo nested objects ki properties ko safely access karne deta hai.
+
+Agar koi property exist nahi karti to error dene ke bajaye `undefined` return karta hai.
+
+---
+
+# Problem Without Optional Chaining
+
+```js
+const product = {
+    name: "Nike Bag"
+};
+
+console.log(product.image.data);
+```
+
+### Output
+
+```txt
+TypeError: Cannot read properties of undefined (reading 'data')
+```
+
+### Reason
+
+```js
+product.image
+```
+
+`undefined` hai aur JavaScript:
+
+```js
+undefined.data
+```
+
+access nahi kar sakta.
+
+---
+
+# Solution Using Optional Chaining
+
+```js
+const product = {
+    name: "Nike Bag"
+};
+
+console.log(product.image?.data);
+```
+
+### Output
+
+```txt
+undefined
+```
+
+Error nahi aayega.
+
+---
+
+# How It Works
+
+```js
+product.image?.data
+```
+
+Internally JavaScript kuch aisa karta hai:
+
+```js
+if(product.image === null || product.image === undefined){
+    return undefined;
+}
+else{
+    return product.image.data;
+}
+```
+
+---
+
+# Real World Example
+
+## Product With Image
+
+```js
+const product1 = {
+    name: "Nike Bag",
+    image: {
+        data: "buffer-data",
+        contentType: "image/png"
+    }
+};
+
+console.log(product1.image?.data);
+```
+
+### Output
+
+```txt
+buffer-data
+```
+
+---
+
+## Product Without Image
+
+```js
+const product2 = {
+    name: "Adidas Bag"
+};
+
+console.log(product2.image?.data);
+```
+
+### Output
+
+```txt
+undefined
+```
+
+---
+
+# Multiple Level Chaining
+
+```js
+const user = {
+    address: {
+        city: "Agra"
+    }
+};
+
+console.log(user.address?.city);
+```
+
+### Output
+
+```txt
+Agra
+```
+
+---
+
+## Missing Nested Object
+
+```js
+const user = {
+    name: "Umar"
+};
+
+console.log(user.address?.city);
+```
+
+### Output
+
+```txt
+undefined
+```
+
+---
+
+# Deep Optional Chaining
+
+```js
+const user = {
+    address: {
+        location: {
+            city: "Agra"
+        }
+    }
+};
+
+console.log(user?.address?.location?.city);
+```
+
+### Output
+
+```txt
+Agra
+```
+
+---
+
+# Comparison
+
+## Without Optional Chaining
+
+```js
+if(
+    user &&
+    user.address &&
+    user.address.location &&
+    user.address.location.city
+){
+    console.log(user.address.location.city);
+}
+```
+
+---
+
+## With Optional Chaining
+
+```js
+console.log(user?.address?.location?.city);
+```
+
+Same result, much cleaner code.
+
+---
+
+# Arrays
+
+```js
+const products = [
+    { name: "Bag" }
+];
+
+console.log(products?.[0]?.name);
+```
+
+### Output
+
+```txt
+Bag
+```
+
+---
+
+# Functions
+
+```js
+const user = {
+    sayHello() {
+        console.log("Hello");
+    }
+};
+
+user.sayHello?.();
+```
+
+### Output
+
+```txt
+Hello
+```
+
+If function doesn't exist:
+
+```js
+user.sayBye?.();
+```
+
+Output:
+
+```txt
+undefined
+```
+
+No error.
+
+---
+
+# MongoDB / Mongoose Example
+
+```js
+console.log(product.image?.data);
+console.log(product.image?.contentType);
+```
+
+Useful when some documents have images and some do not.
+
+Example:
+
+```js
+{
+    name: "Nike Bag",
+    image: {
+        data: Buffer(...),
+        contentType: "image/png"
+    }
+}
+```
+
+and
+
+```js
+{
+    name: "Adidas Bag"
+}
+```
+
+Optional chaining prevents runtime errors.
+
+---
+
+# Best Practice
+
+Use optional chaining whenever:
+
+* API response may contain missing fields.
+* MongoDB documents may have optional properties.
+* Nested objects may not exist.
+* Working with user-generated data.
+
+Examples:
+
+```js
+user?.profile?.avatar
+```
+
+```js
+product?.image?.data
+```
+
+```js
+req.user?.email
+```
+
+```js
+response?.data?.users
+```
+
+---
+
+# Key Rule
+
+`?.` means:
+
+> "Agar left side exist karti hai to aage jao, warna `undefined` return kar do aur error mat do."
+
+Example:
+
+```js
+user?.address?.city
+```
+
+Equivalent to:
+
+```js
+if(user && user.address){
+    return user.address.city;
+}
+```
+
+Optional Chaining = Cleaner Code + Fewer Errors 🚀
