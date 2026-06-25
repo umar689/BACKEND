@@ -1,0 +1,325 @@
+# Express `res.locals` aur JavaScript `!!` Notes
+
+# 1. `res.locals` kya hai?
+
+`res.locals` Express ka ek object hai jisme hum data store karte hain jo **current request** ke liye available hota hai.
+
+Jo bhi value `res.locals` me store karoge, wo automatically EJS (ya kisi bhi template engine) me access ho jayegi.
+
+## Example
+
+```js
+app.get("/", (req, res) => {
+    res.locals.name = "Umar";
+    res.render("index");
+});
+```
+
+### EJS
+
+```ejs
+<h1>Hello <%= name %></h1>
+```
+
+Output
+
+```
+Hello Umar
+```
+
+---
+
+# 2. `res.locals` ka use kyu karte hain?
+
+Maan lo har page par logged-in user ka naam dikhana hai.
+
+Galat approach:
+
+```js
+res.render("home", {
+    user: req.user
+});
+
+res.render("profile", {
+    user: req.user
+});
+
+res.render("cart", {
+    user: req.user
+});
+```
+
+Har render me `user` bhejna padega.
+
+Better approach:
+
+```js
+app.use((req, res, next) => {
+    res.locals.user = req.user;
+    next();
+});
+```
+
+Ab kisi bhi EJS file me
+
+```ejs
+<%= user.username %>
+```
+
+direct use kar sakte ho.
+
+---
+
+# 3. Owner Login Example
+
+```js
+router.use((req, res, next) => {
+    res.locals.isOwner = !!req.cookies.token;
+    next();
+});
+```
+
+Ab kisi bhi EJS page me
+
+```ejs
+<% if (isOwner) { %>
+    <a href="/owners/logout">Logout</a>
+<% } %>
+```
+
+Aur render karte waqt
+
+```js
+res.render("admin");
+```
+
+me `isOwner: true` bhejne ki zarurat nahi.
+
+---
+
+# 4. `!!` kya hota hai?
+
+`!!` kisi bhi value ko boolean (`true` ya `false`) me convert karta hai.
+
+Syntax
+
+```js
+!!value
+```
+
+---
+
+# 5. Single `!`
+
+Single `!` value ko ulta (NOT) kar deta hai.
+
+```js
+!"Hello"      // false
+!0            // true
+!undefined    // true
+!null         // true
+```
+
+---
+
+# 6. Double `!!`
+
+Double `!!` value ko boolean bana deta hai.
+
+```js
+!!"Hello"      // true
+!!0            // false
+!!1            // true
+!!undefined    // false
+!!null         // false
+!![]           // true
+!!{}           // true
+```
+
+---
+
+# 7. Truthy aur Falsy
+
+## Falsy Values
+
+Ye values `false` ban jaati hain.
+
+```js
+false
+0
+-0
+0n
+""
+null
+undefined
+NaN
+```
+
+```js
+!!0          // false
+!!""         // false
+!!null       // false
+!!undefined  // false
+```
+
+---
+
+## Truthy Values
+
+Baaki almost sab values truthy hoti hain.
+
+```js
+"Hello"
+[]
+{}
+1
+-10
+"0"
+```
+
+```js
+!!"Hello"    // true
+!![]         // true
+!!{}         // true
+!!1          // true
+```
+
+---
+
+# 8. Owner Login Example
+
+```js
+res.locals.isOwner = !!req.cookies.token;
+```
+
+Agar cookie hai
+
+```js
+req.cookies.token = "eyJhbGc..."
+```
+
+to
+
+```js
+!!req.cookies.token
+```
+
+Result
+
+```js
+true
+```
+
+Agar cookie nahi hai
+
+```js
+req.cookies.token = undefined;
+```
+
+to
+
+```js
+!!req.cookies.token
+```
+
+Result
+
+```js
+false
+```
+
+---
+
+# 9. Bina `!!` ke
+
+Ye bhi chalega
+
+```js
+res.locals.isOwner = req.cookies.token;
+```
+
+Kyuki EJS me
+
+```ejs
+<% if (isOwner) { %>
+```
+
+string ko bhi truthy mana jata hai.
+
+Lekin `!!` use karne se `isOwner` ki value hamesha boolean (`true` ya `false`) hoti hai.
+
+Isse code zyada clean aur readable hota hai.
+
+---
+
+# 10. Flow Diagram
+
+```
+Browser
+    │
+    │ Request
+    ▼
+Middleware
+    │
+    ├── req.cookies.token
+    │
+    ├── !!req.cookies.token
+    │
+    └── res.locals.isOwner = true / false
+            │
+            ▼
+       res.render()
+            │
+            ▼
+         EJS File
+
+<% if (isOwner) { %>
+    Logout
+<% } %>
+```
+
+---
+
+# 11. Interview Tip
+
+**Question:** `res.locals` aur `app.locals` me difference?
+
+### `res.locals`
+
+* Sirf current request ke liye.
+* Har request ke baad reset ho jata hai.
+* User-specific data ke liye use hota hai.
+
+### `app.locals`
+
+* Pure application ke liye.
+* Server restart hone tak available rehta hai.
+* Common values jaise app name, company name, version, etc. ke liye use hota hai.
+
+Example
+
+```js
+app.locals.appName = "Bagify";
+```
+
+EJS
+
+```ejs
+<%= appName %>
+```
+
+Output
+
+```
+Bagify
+```
+
+---
+
+# Summary
+
+* `res.locals` → Current request ke data ko template tak bhejne ke liye.
+* `app.locals` → Pure application ke common data ke liye.
+* `!value` → Boolean ko invert karta hai.
+* `!!value` → Kisi bhi value ko boolean (`true`/`false`) me convert karta hai.
+* `!!req.cookies.token` → Cookie hai to `true`, nahi hai to `false`.
