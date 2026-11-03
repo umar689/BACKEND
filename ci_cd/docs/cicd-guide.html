@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="hi-Latn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CI/CD: Zero se Pro tak</title>
+<style>
+:root{--cds-text-primary:#1f1e1d;--cds-text-secondary:#6b6a66;--cds-chart-axis:#a9a79f;--cds-chart-grid:#e3e1da;
+--cds-chart-categorical-1:#2c7be5;--cds-chart-categorical-2:#e8673c;--cds-chart-status-good:#2e9e44;--cds-chart-status-critical:#d63c3c;
+--cds-chart-reference-tint:#f1f0ec;--cds-surface-1:#fbfbf9;--bg:#ffffff;--code-bg:#f5f4f0;--border:#e3e1da;--link:#1a64c8}
+@media (prefers-color-scheme: dark){:root{--cds-text-primary:#ecebe6;--cds-text-secondary:#a8a69f;--cds-chart-axis:#7a7872;--cds-chart-grid:#3a3936;
+--cds-chart-reference-tint:#2a2a28;--cds-surface-1:#232321;--bg:#1b1b1a;--code-bg:#262624;--border:#3a3936;--link:#6ea8ff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--cds-text-primary);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+main{max-width:820px;margin:0 auto;padding:48px 24px 96px}
+h1{font-size:34px;line-height:1.2;margin:0 0 8px}
+h2{font-size:25px;margin:56px 0 12px;padding-top:16px;border-top:1px solid var(--border)}
+h3{font-size:19px;margin:32px 0 8px}
+p,ul,ol{margin:0 0 14px}
+li{margin:4px 0}
+a{color:var(--link)}
+time{color:var(--cds-text-secondary);font-size:14px}
+code{font:0.88em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code-bg);padding:2px 5px;border-radius:4px}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:14px;line-height:1.5;margin:0 0 16px}
+pre code{background:none;padding:0;font-size:inherit}
+table{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:14.5px;display:block;overflow-x:auto}
+th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--cds-chart-reference-tint);font-weight:600}
+figure.diagram{margin:20px 0 8px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
+figure.diagram svg{display:block;font-family:inherit}
+figcaption{font-size:13px;color:var(--cds-text-secondary);text-align:center;margin-top:6px}
+input[type=checkbox]{margin-right:8px;transform:translateY(1px)}
+ul:has(input[type=checkbox]){list-style:none;padding-left:4px}
+nav.toc{background:var(--cds-chart-reference-tint);border-radius:12px;padding:16px 20px;margin:24px 0}
+nav.toc ol{margin:0;columns:2;column-gap:32px;font-size:15px}
+@media (max-width:640px){nav.toc ol{columns:1}}
+@media print{h2{break-before:auto}figure,pre,table{break-inside:avoid}}
+</style>
+</head>
+<body>
+<main>
+<h1 id="cicd-zero-se-pro-tak">CI/CD: Zero se Pro tak</h1>
+<p><time data-atom="date" datetime="2026-11-03">2026-11-03</time></p>
+<nav class="toc"><strong>Vishay soochi</strong><ol><li><a href="#1-cicd-kya-hai-aur-kyun-zaroori-hai">CI/CD kya hai aur kyun zaroori hai</a></li><li><a href="#2-ci-vs-continuous-delivery-vs-continuous-deployment">CI vs Continuous Delivery vs Continuous Deployment</a></li><li><a href="#3-zaroori-shabd-vocabulary">Zaroori shabd (vocabulary)</a></li><li><a href="#4-git-branching-strategy">Git branching strategy</a></li><li><a href="#5-environments-local-dev-staging-prod">Environments: local, dev, staging, prod</a></li><li><a href="#6-github-actions-ki-anatomy">GitHub Actions ki anatomy</a></li><li><a href="#7-hamari-pipeline-node-mysql-github-aws-ec2">Hamari pipeline: Node + MySQL + GitHub + AWS EC2</a></li><li><a href="#8-deploysh-server-pe-kya-hota-hai">deploy.sh: server pe kya hota hai</a></li><li><a href="#9-ssh-aur-keys">SSH aur keys</a></li><li><a href="#10-database-migrations">Database migrations</a></li><li><a href="#11-secrets-aur-security">Secrets aur security</a></li><li><a href="#12-backup-rollback-aur-disaster-recovery">Backup, rollback aur disaster recovery</a></li><li><a href="#13-deployment-strategies">Deployment strategies</a></li><li><a href="#14-ci-mein-testing">CI mein testing</a></li><li><a href="#15-monitoring-logs-aur-alerts">Monitoring, logs aur alerts</a></li><li><a href="#16-troubleshooting-common-errors-aur-unke-fix">Troubleshooting: common errors aur unke fix</a></li><li><a href="#17-pro-level-aage-kya-seekhein">Pro level: aage kya seekhein</a></li><li><a href="#18-setup-checklist-practice-aur-roadmap">Setup checklist, practice aur roadmap</a></li></ol></nav>
+<h2 id="1-cicd-kya-hai-aur-kyun-zaroori-hai">1. CI/CD kya hai aur kyun zaroori hai</h2>
+<p>CI/CD ek automatic assembly line hai: developer code push karta hai, aur machine khud use test karke, build karke, server tak pahuncha deti hai. Insaan sirf faisla leta hai, haath ka kaam machine karti hai.</p>
+<p><strong>CI = Continuous Integration.</strong> Har developer ka code din mein kai baar main codebase mein milaya (integrate) jaata hai, aur har baar automatic tests chalte hain. Galti usi waqt pakdi jaati hai, hafte baad nahi.</p>
+<p><strong>CD = Continuous Delivery / Deployment.</strong> Jo code tests pass kar gaya, wo automatic tareeke se server tak pahunchaya jaata hai.</p>
+<h3 id="ek-analogy-chai-ki-factory">Ek analogy: chai ki factory</h3>
+<p>Socho tumhari chai ki factory hai. Bina machine ke, har packet haath se bharte ho, haath se tolte ho, haath se seal karte ho. Thak gaye toh galti hogi: kabhi kam chai, kabhi seal khula. CI/CD wo conveyor belt hai jisme har packet automatic tola jaata hai (tests), galat packet belt se hata diya jaata hai (pipeline fail), aur sahi packet seedha truck mein (deploy).</p>
+<figure class="diagram"><svg width="100%" viewBox="0 0 760 246" role="img" aria-label="Har push ek hi assembly line se guzarta hai" font-size="13"><defs><marker id="line-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--cds-chart-axis)"></path></marker></defs><text x="24" y="32" font-size="15" font-weight="600" fill="var(--cds-text-primary)">Har push ek hi assembly line se guzarta hai</text><g fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"><path d="M152 100H174" marker-end="url(#line-arrow)"></path><path d="M296 100H318" marker-end="url(#line-arrow)"></path><path d="M440 100H462" marker-end="url(#line-arrow)"></path><path d="M584 100H606" marker-end="url(#line-arrow)"></path><path d="M380 128V172" marker-end="url(#line-arrow)"></path><path d="M280 196H92V130" marker-end="url(#line-arrow)"></path></g><g><rect x="32" y="72" width="120" height="56" rx="8" fill="none" fill-opacity="1" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="92" y="97" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">Code push</text><text x="92" y="116" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">git push</text></g><g><rect x="176" y="72" width="120" height="56" rx="8" fill="none" fill-opacity="1" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="236" y="97" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">Build</text><text x="236" y="116" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">npm ci, build</text></g><g><rect x="320" y="72" width="120" height="56" rx="8" fill="var(--cds-chart-categorical-1)" fill-opacity="0.12" stroke="var(--cds-chart-categorical-1)" stroke-width="2"></rect><text x="380" y="97" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">Test</text><text x="380" y="116" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">lint + tests</text></g><g><rect x="464" y="72" width="120" height="56" rx="8" fill="none" fill-opacity="1" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="524" y="97" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">Deploy</text><text x="524" y="116" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">server pe</text></g><g><rect x="608" y="72" width="120" height="56" rx="8" fill="none" fill-opacity="1" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="668" y="97" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">Monitor</text><text x="668" y="116" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">logs, alerts</text></g><g><rect x="280" y="174" width="200" height="44" rx="8" fill="none" stroke="var(--cds-chart-status-critical)" stroke-width="1.25"></rect><text x="380" y="200" text-anchor="middle" fill="var(--cds-text-primary)">Fail: developer fix kare</text></g><text x="452" y="62" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">pass</text><text x="388" y="154" font-size="11.5" fill="var(--cds-text-secondary)">fail</text><text x="186" y="188" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">fix karke dobara push</text></svg><figcaption>CI/CD assembly line · 5 steps, fail loop</figcaption></figure>
+<p>Test gate hai: fail hua toh code aage nahi badhta aur developer ke paas wapas jaata hai.</p>
+<h3 id="bina-cicd-vs-cicd-ke-saath">Bina CI/CD vs CI/CD ke saath</h3>
+<table><thead><tr><th>Kaam</th><th>Bina CI/CD (manual)</th><th>CI/CD ke saath</th></tr></thead><tbody><tr><td>Server pe code pahunchana</td><td>SSH karo, <code>git pull</code>, <code>npm install</code>, restart, sab haath se</td><td>Push karo, baaki pipeline karti hai</td></tr><tr><td>Tests</td><td>&quot;Baad mein chala lenge&quot;, aksar bhool jaate hain</td><td>Har push pe zaroor chalte hain</td></tr><tr><td>Galti kab pakdi jaati hai</td><td>Jab user complain kare</td><td>Merge se pehle hi</td></tr><tr><td>DB backup</td><td>Yaad aaya toh</td><td>Har prod deploy se pehle automatic</td></tr><tr><td>Kisne kya deploy kiya</td><td>Pata nahi</td><td>GitHub mein poori history</td></tr><tr><td>Rollback</td><td>Ghabra ke manually</td><td>Script khud karti hai</td></tr><tr><td>Deploy ka darr</td><td>Friday ko deploy mat karna!</td><td>Chhote, roz ke, bore deploys</td></tr></tbody></table>
+<p><strong>Golden rule:</strong> Deploy ek bore karne wali, roz ki cheez honi chahiye. Agar deploy karne mein darr lagta hai, toh pipeline mein kuch missing hai.</p>
+<h2 id="2-ci-vs-continuous-delivery-vs-continuous-deployment">2. CI vs Continuous Delivery vs Continuous Deployment</h2>
+<p>Teeno mein farak sirf ek baat ka hai: production pe last button kaun dabata hai, insaan ya machine.</p>
+<figure class="diagram"><svg width="100%" viewBox="0 0 760 280" role="img" aria-label="Teeno mein farak sirf aakhri kadam ka hai" font-size="13"><text x="24" y="30" font-size="15" font-weight="600" fill="var(--cds-text-primary)">Teeno mein farak sirf aakhri kadam ka hai: production kaun deploy karta hai</text><g><rect x="216" y="54" width="118" height="44" rx="8" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="275" y="80" text-anchor="middle" fill="var(--cds-text-primary)">Code merge</text></g><g><rect x="350" y="54" width="118" height="44" rx="8" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="409" y="80" text-anchor="middle" fill="var(--cds-text-primary)">Build + test</text></g><g><rect x="484" y="54" width="118" height="44" rx="8" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="543" y="80" text-anchor="middle" fill="var(--cds-text-primary)">Dev deploy</text></g><g><rect x="618" y="54" width="118" height="44" rx="8" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="677" y="80" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">Prod deploy</text></g><line x1="24" x2="736" y1="112" y2="112" stroke="var(--cds-chart-grid)"></line><g><text x="24" y="144" font-weight="600" fill="var(--cds-text-primary)">Continuous Integration</text><text x="24" y="160" font-size="11.5" fill="var(--cds-text-secondary)">pehla kadam</text><rect x="216" y="135" width="252" height="22" rx="6" fill="var(--cds-chart-categorical-1)" fill-opacity="0.18" stroke="var(--cds-chart-categorical-1)" stroke-width="1.25"></rect><text x="342" y="150" text-anchor="middle" font-size="11.5" fill="var(--cds-text-primary)">automatic</text><rect x="484" y="135" width="252" height="22" rx="6" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25" stroke-dasharray="4 4"></rect><text x="610" y="150" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">haath se</text></g><g><text x="24" y="194" font-weight="600" fill="var(--cds-text-primary)">Continuous Delivery</text><text x="24" y="210" font-size="11.5" fill="var(--cds-text-secondary)">hamara setup</text><rect x="216" y="185" width="386" height="22" rx="6" fill="var(--cds-chart-categorical-1)" fill-opacity="0.18" stroke="var(--cds-chart-categorical-1)" stroke-width="1.25"></rect><text x="409" y="200" text-anchor="middle" font-size="11.5" fill="var(--cds-text-primary)">automatic</text><rect x="618" y="185" width="118" height="22" rx="6" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25" stroke-dasharray="4 4"></rect><text x="677" y="200" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">approval se</text></g><g><text x="24" y="244" font-weight="600" fill="var(--cds-text-primary)">Continuous Deployment</text><text x="24" y="260" font-size="11.5" fill="var(--cds-text-secondary)">sab automatic</text><rect x="216" y="235" width="520" height="22" rx="6" fill="var(--cds-chart-categorical-1)" fill-opacity="0.18" stroke="var(--cds-chart-categorical-1)" stroke-width="1.25"></rect><text x="476" y="250" text-anchor="middle" font-size="11.5" fill="var(--cds-text-primary)">automatic, production bhi</text></g></svg><figcaption>CI vs Delivery vs Deployment · kya automatic hai</figcaption></figure>
+<p>Bhara hua hissa machine karti hai, dashed hissa insaan.</p>
+<table><thead><tr><th>Level</th><th>Kya automatic hai</th><th>Production deploy</th><th>Kab use karein</th></tr></thead><tbody><tr><td>Continuous Integration</td><td>Build + tests har push pe</td><td>Manual (pipeline nahi karti)</td><td>Shuruaat, sabse pehla kadam</td></tr><tr><td>Continuous Delivery</td><td>Build + test + dev/staging deploy</td><td>Ek click / approval se</td><td>Zyada tar teams (hamara setup yahi hai)</td></tr><tr><td>Continuous Deployment</td><td>Sab kuch, production bhi</td><td>Bina insaan ke, tests pass hote hi</td><td>Strong test coverage + monitoring wali teams</td></tr></tbody></table>
+<p>Hamara setup <strong>Continuous Delivery</strong> hai: dev server pe sab automatic, production pe ek approval ke baad. Jab tests aur monitoring pe bharosa ho jaaye, approval hata ke Continuous Deployment pe ja sakte ho.</p>
+<h2 id="3-zaroori-shabd-vocabulary">3. Zaroori shabd (vocabulary)</h2>
+<p>Ye 14 shabd samajh liye toh CI/CD ki koi bhi documentation padh loge.</p>
+<table><thead><tr><th>Shabd</th><th>Matlab</th><th>Hamare setup mein example</th></tr></thead><tbody><tr><td>Pipeline</td><td>Steps ki poori chain jo code ko push se server tak le jaati hai</td><td><code>deploy.yml</code> ka poora flow</td></tr><tr><td>Workflow</td><td>GitHub Actions mein ek pipeline ki YAML file</td><td><code>.github/workflows/deploy.yml</code></td></tr><tr><td>Trigger / Event</td><td>Wo ghatna jisse pipeline shuru hoti hai</td><td><code>push</code> on <code>develop</code>, <code>pull_request</code></td></tr><tr><td>Job</td><td>Workflow ka ek bada hissa, apni alag machine pe chalta hai</td><td><code>test</code> job, <code>deploy</code> job</td></tr><tr><td>Step</td><td>Job ke andar ek command ya action</td><td><code>npm ci</code>, <code>npm test</code></td></tr><tr><td>Action</td><td>Kisi aur ka bana hua reusable step</td><td><code>actions/checkout@v4</code>, <code>appleboy/ssh-action@v1</code></td></tr><tr><td>Runner</td><td>Wo machine jispe job chalti hai</td><td>GitHub ki <code>ubuntu-latest</code> VM</td></tr><tr><td>Artifact</td><td>Build ka output jo aage ke step ya job mein use ho</td><td><code>dist/</code> folder, zip file</td></tr><tr><td>Environment</td><td>Deploy target ka naam, apne secrets aur rules ke saath</td><td><code>development</code>, <code>production</code></td></tr><tr><td>Secret</td><td>Chhupi hui value, logs mein <code>***</code> dikhti hai</td><td><code>SSH_PRIVATE_KEY</code></td></tr><tr><td>Variable</td><td>Normal config value, chhupi nahi</td><td><code>APP_DIR=/var/www/app</code></td></tr><tr><td>Deploy</td><td>Naya code server pe chalu karna</td><td><code>deploy.sh</code></td></tr><tr><td>Rollback</td><td>Galat deploy ko pichhle version pe wapas le jaana</td><td><code>deploy.sh</code> ka <code>rollback()</code></td></tr><tr><td>Migration</td><td>DB schema change ki version-controlled file</td><td><code>20261103_add_phone_to_users.js</code></td></tr></tbody></table>
+<h2 id="4-git-branching-strategy">4. Git branching strategy</h2>
+<p>Pipeline branch dekh ke decide karti hai ki code kahan jayega, isliye branch ka naam hi deploy ka address hai: <code>develop</code> matlab dev server, <code>main</code> matlab production.</p>
+<figure class="diagram"><svg width="100%" viewBox="0 0 760 276" role="img" aria-label="Code feature se develop, phir main tak sirf PR ke raaste jaata hai" font-size="13"><defs><marker id="br-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--cds-chart-axis)"></path></marker></defs><text x="24" y="32" font-size="15" font-weight="600" fill="var(--cds-text-primary)">Code feature se develop, phir main tak sirf PR ke raaste jaata hai</text><text x="24" y="100" font-weight="600" fill="var(--cds-text-primary)">feature/*</text><text x="24" y="170" font-weight="600" fill="var(--cds-text-primary)">develop</text><text x="24" y="240" font-weight="600" fill="var(--cds-text-primary)">main</text><g fill="none" stroke-width="2"><line x1="230" x2="300" y1="96" y2="96" stroke="var(--cds-chart-categorical-2)"></line><line x1="150" x2="596" y1="166" y2="166" stroke="var(--cds-chart-axis)"></line><line x1="150" x2="596" y1="236" y2="236" stroke="var(--cds-chart-categorical-1)"></line></g><g fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"><path d="M190 160L228 100" marker-end="url(#br-arrow)"></path><path d="M302 102L344 158" marker-end="url(#br-arrow)"></path><path d="M422 172L464 228" marker-end="url(#br-arrow)"></path><path d="M596 166H610" marker-end="url(#br-arrow)"></path><path d="M596 236H610" marker-end="url(#br-arrow)"></path></g><g><circle cx="250" cy="96" r="6" fill="var(--cds-chart-grid)" stroke="var(--cds-chart-axis)" stroke-width="1.25"></circle><circle cx="290" cy="96" r="6" fill="var(--cds-chart-grid)" stroke="var(--cds-chart-axis)" stroke-width="1.25"></circle><circle cx="190" cy="166" r="6" fill="var(--cds-chart-grid)" stroke="var(--cds-chart-axis)" stroke-width="1.25"></circle><circle cx="350" cy="166" r="6" fill="var(--cds-chart-grid)" stroke="var(--cds-chart-axis)" stroke-width="1.25"></circle><circle cx="420" cy="166" r="6" fill="var(--cds-chart-grid)" stroke="var(--cds-chart-axis)" stroke-width="1.25"></circle><circle cx="210" cy="236" r="6" fill="var(--cds-chart-grid)" stroke="var(--cds-chart-axis)" stroke-width="1.25"></circle><circle cx="470" cy="236" r="6" fill="var(--cds-chart-grid)" stroke="var(--cds-chart-axis)" stroke-width="1.25"></circle></g><text x="200" y="128" text-anchor="end" font-size="11.5" fill="var(--cds-text-secondary)">naya branch</text><text x="332" y="122" font-size="11.5" fill="var(--cds-text-secondary)">PR + tests + review</text><text x="452" y="198" font-size="11.5" fill="var(--cds-text-secondary)">PR + approval</text><g><rect x="612" y="146" width="124" height="40" rx="8" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="674" y="170" text-anchor="middle" fill="var(--cds-text-primary)">Dev server</text></g><g><rect x="612" y="216" width="124" height="40" rx="8" fill="var(--cds-chart-categorical-1)" fill-opacity="0.12" stroke="var(--cds-chart-categorical-1)" stroke-width="2"></rect><text x="674" y="240" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">Production</text></g></svg><figcaption>Branching flow · feature → develop → main</figcaption></figure>
+<p>Har gol nishaan ek commit hai. <code>develop</code> mein merge hote hi dev server update hota hai, <code>main</code> mein merge hote hi (approval ke baad) production.</p>
+<table><thead><tr><th>Branch</th><th>Kis kaam ki</th><th>Kahan deploy</th><th>Kaun push kar sakta hai</th></tr></thead><tbody><tr><td><code>feature/login-otp</code></td><td>Ek naya feature ya fix</td><td>Kahin nahi (sirf tests)</td><td>Developer khud</td></tr><tr><td><code>develop</code></td><td>Sab features yahan milte hain</td><td>Dev server, automatic</td><td>Sirf PR se merge</td></tr><tr><td><code>main</code></td><td>Jo production pe chal raha hai</td><td>Production, approval ke baad</td><td>Sirf <code>develop</code> se PR</td></tr><tr><td><code>hotfix/payment-crash</code></td><td>Prod pe urgent fix</td><td><code>main</code> se banta hai, <code>main</code> + <code>develop</code> dono mein merge</td><td>Senior dev</td></tr></tbody></table>
+<h3 id="roz-ka-kaam-step-by-step">Roz ka kaam, step by step</h3>
+<ol><li><p><code>develop</code> se nayi branch banao:</p><pre><code class="language-bash">git checkout develop &amp;&amp; git pull
+git checkout -b feature/login-otp</code></pre></li><li><p>Code likho, chhote-chhote commits karo:</p><pre><code class="language-bash">git add . &amp;&amp; git commit -m &quot;feat: OTP login API&quot;
+git push -u origin feature/login-otp</code></pre></li><li><p>GitHub pe <code>feature/login-otp</code> → <code>develop</code> ka Pull Request (PR) kholo. Pipeline tests chalayegi.</p></li><li><p>Koi teammate code review kare. Tests green + review OK hone pe merge karo.</p></li><li><p>Merge hote hi dev server pe automatic deploy. Wahan test karo.</p></li><li><p>Release ke time <code>develop</code> → <code>main</code> PR banao, approve karo, production deploy.</p></li></ol>
+<h3 id="branch-protection-zaroor-lagao">Branch protection (zaroor lagao)</h3>
+<p>Repo → Settings → Branches → Add rule, <code>main</code> aur <code>develop</code> dono ke liye:</p>
+<ul><li><p>Require a pull request before merging (direct push band)</p></li><li><p>Require approvals: 1</p></li><li><p>Require status checks to pass: <code>Install, lint, test, build</code> job select karo</p></li><li><p>Do not allow bypassing the above settings</p></li></ul>
+<p>Iske bina koi bhi galti se seedha <code>main</code> pe push kar dega aur production toot jayega.</p>
+<h3 id="commit-message-convention">Commit message convention</h3>
+<p><code>feat:</code> naya feature · <code>fix:</code> bug fix · <code>chore:</code> maintenance · <code>docs:</code> documentation · <code>refactor:</code> code saaf kiya, behaviour same · <code>test:</code> tests. Isse history padhna aur changelog banana aasaan ho jaata hai.</p>
+<h2 id="5-environments-local-dev-staging-prod">5. Environments: local, dev, staging, prod</h2>
+<p>Environment ek alag duniya hai jahan code chalta hai. Har duniya ka apna server, apna DB aur apni <code>.env</code> hoti hai. Code sab jagah same jaata hai, sirf config alag hota hai.</p>
+<table><thead><tr><th>Environment</th><th>Kaun use karta hai</th><th>Data</th><th>Hamare paas</th></tr></thead><tbody><tr><td>Local</td><td>Developer apne laptop pe</td><td>Fake / seed data</td><td>Haan</td></tr><tr><td>Development</td><td>Team, QA, testing</td><td>Test data</td><td>Haan (dev server)</td></tr><tr><td>Staging</td><td>Final check, prod jaisa hi</td><td>Prod jaisa (masked)</td><td>Abhi nahi, baad mein add kar sakte ho</td></tr><tr><td>Production</td><td>Asli users</td><td>Asli data</td><td>Haan</td></tr></tbody></table>
+<h3 id="db-har-environment-ka-alag-kyun">DB har environment ka alag kyun?</h3>
+<ul><li><p>Dev pe galat migration ya <code>DELETE</code> chal gaya toh prod ka data safe rehta hai.</p></li><li><p>Testing ke kachre wale records asli users ko nahi dikhte.</p></li><li><p>Prod ke customers ka personal data developers ke haath nahi lagta.</p></li></ul>
+<h3 id="config-code-ek-env-alag">Config: code ek, <code>.env</code> alag</h3>
+<p>Code mein kabhi password ya server ka address hardcode mat karo. Sab <code>.env</code> se padho:</p>
+<pre><code class="language-js">// db.js
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+});</code></pre>
+<pre><code class="language-bash"># dev server ki .env
+NODE_ENV=development
+DB_HOST=localhost
+DB_NAME=myapp_dev
+
+# prod server ki .env
+NODE_ENV=production
+DB_HOST=myapp-prod.xxxx.ap-south-1.rds.amazonaws.com
+DB_NAME=myapp_prod</code></pre>
+<p><code>.env</code> ko <code>.gitignore</code> mein daalo. Repo mein sirf ek <code>.env.example</code> rakho jisme keys hon, values nahi. Isse naya developer jaan jaata hai ki kaunsi settings chahiye.</p>
+<h2 id="6-github-actions-ki-anatomy">6. GitHub Actions ki anatomy</h2>
+<p>GitHub Actions ek YAML file padhta hai: <strong>kab</strong> chalna hai (<code>on</code>), <strong>kya</strong> chalana hai (<code>jobs</code>), aur <strong>kis order</strong> mein (<code>needs</code>). Repo ke <code>.github/workflows/</code> folder mein jo bhi <code>.yml</code> file hogi, GitHub use apne aap pipeline maan lega.</p>
+<h3 id="sabse-chhota-workflow">Sabse chhota workflow</h3>
+<pre><code class="language-yaml">name: Hello CI            # Actions tab mein ye naam dikhega
+on: push                  # kisi bhi branch pe push hone pe chalo
+jobs:
+  hello:                  # job ka id
+    runs-on: ubuntu-latest  # GitHub ki free Linux machine
+    steps:
+      - uses: actions/checkout@v4   # repo ka code machine pe laao
+      - run: echo &quot;Namaste CI!&quot;     # koi bhi shell command</code></pre>
+<p>Ise push karo, GitHub → Actions tab kholo, aur pehli pipeline chalti dikhegi.</p>
+<h3 id="har-keyword-ka-matlab">Har keyword ka matlab</h3>
+<table><thead><tr><th>Keyword</th><th>Kya karta hai</th><th>Example</th></tr></thead><tbody><tr><td><code>on</code></td><td>Trigger: kab chalna hai</td><td><code>push</code>, <code>pull_request</code>, <code>workflow_dispatch</code> (manual button), <code>schedule</code> (cron)</td></tr><tr><td><code>on.push.branches</code></td><td>Sirf in branches pe</td><td><code>[develop, main]</code></td></tr><tr><td><code>jobs</code></td><td>Kaam ke bade hisse</td><td><code>test</code>, <code>deploy</code></td></tr><tr><td><code>runs-on</code></td><td>Kaunsi machine</td><td><code>ubuntu-latest</code></td></tr><tr><td><code>steps</code></td><td>Job ke andar commands, upar se neeche</td><td><code>- run: npm ci</code></td></tr><tr><td><code>uses</code></td><td>Bana-banaya action use karo</td><td><code>actions/setup-node@v4</code></td></tr><tr><td><code>with</code></td><td>Action ko input do</td><td><code>node-version: 22</code></td></tr><tr><td><code>needs</code></td><td>Pehle wo job khatam ho, phir ye</td><td><code>needs: test</code></td></tr><tr><td><code>if</code></td><td>Shart: tabhi chalo jab</td><td><code>if: github.event_name != &#39;pull_request&#39;</code></td></tr><tr><td><code>environment</code></td><td>Kis environment ke secrets aur rules lagenge</td><td><code>production</code></td></tr><tr><td><code>concurrency</code></td><td>Ek saath do deploy na chalein</td><td><code>group: deploy-main</code></td></tr><tr><td><code>env</code></td><td>Environment variables</td><td><code>NODE_ENV: test</code></td></tr><tr><td><code>services</code></td><td>Saath mein DB jaisa container chalao</td><td><code>mysql:8</code></td></tr></tbody></table>
+<h3 id="jobs-parallel-ya-ek-ke-baad-ek">Jobs: parallel ya ek ke baad ek?</h3>
+<p>By default saari jobs <strong>ek saath (parallel)</strong> chalti hain, har ek apni alag fresh machine pe. <code>needs</code> lagane se order banta hai. Isliye <code>deploy</code> mein <code>needs: test</code> hai: test fail hua toh deploy chalega hi nahi.</p>
+<p>Alag machine ka matlab: ek job mein install kiya <code>node_modules</code> doosri job mein nahi milega. Files share karni hon toh <code>actions/upload-artifact</code> aur <code>actions/download-artifact</code> use karo.</p>
+<h3 id="expressions">Expressions <code>${{ }}</code></h3>
+<p><code>${{ ... }}</code> ke andar GitHub ki values aur chhoti logic likh sakte ho:</p>
+<table><thead><tr><th>Expression</th><th>Value</th></tr></thead><tbody><tr><td><code>${{ github.ref_name }}</code></td><td>Branch ka naam, jaise <code>develop</code></td></tr><tr><td><code>${{ github.sha }}</code></td><td>Commit ka poora hash</td></tr><tr><td><code>${{ github.actor }}</code></td><td>Jisne push kiya</td></tr><tr><td><code>${{ secrets.SSH_HOST }}</code></td><td>Secret ki value (logs mein <code>***</code>)</td></tr><tr><td><code>${{ vars.APP_DIR }}</code></td><td>Variable ki value</td></tr><tr><td><code>${{ github.ref_name == &#39;main&#39; &amp;&amp; &#39;production&#39; || &#39;development&#39; }}</code></td><td>Ternary: main hai toh <code>production</code>, warna <code>development</code></td></tr></tbody></table>
+<h3 id="secrets-vs-variables">Secrets vs Variables</h3>
+<table><thead><tr><th></th><th>Secrets</th><th>Variables</th></tr></thead><tbody><tr><td>Kya rakho</td><td>Password, private key, token</td><td>Path, naam, URL</td></tr><tr><td>Logs mein</td><td><code>***</code> se chhupa</td><td>Saaf dikhta hai</td></tr><tr><td>Baad mein padh sakte ho?</td><td>Nahi, sirf overwrite</td><td>Haan</td></tr><tr><td>Syntax</td><td><code>secrets.NAME</code></td><td><code>vars.NAME</code></td></tr></tbody></table>
+<p>Teen level pe rakh sakte ho: <strong>Repository</strong> (sab jobs ke liye), <strong>Environment</strong> (sirf us environment wali job ke liye), <strong>Organization</strong> (sab repos ke liye). Ek hi naam dono jagah ho toh Environment wala jeetta hai, isliye <code>SSH_HOST</code> dev aur prod mein alag-alag value ke saath rakh paate hain.</p>
+<h2 id="7-hamari-pipeline-node-mysql-github-aws-ec2">7. Hamari pipeline: Node + MySQL + GitHub + AWS EC2</h2>
+<p>Poora system 4 jagah pe chalta hai: developer ka laptop, GitHub (code + Actions), dev EC2 aur prod EC2. GitHub Actions dono servers mein SSH se ghus ke <code>deploy.sh</code> chalata hai, aur servers GitHub se code pull karte hain.</p>
+<figure class="diagram"><svg width="100%" viewBox="0 0 760 356" role="img" aria-label="GitHub Actions dono servers pe SSH se deploy karta hai" font-size="13"><defs><marker id="arch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--cds-chart-axis)"></path></marker></defs><text x="24" y="30" font-size="15" font-weight="600" fill="var(--cds-text-primary)">GitHub Actions dono servers pe SSH se deploy karta hai</text><g><rect x="24" y="100" width="160" height="56" rx="8" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="104" y="124" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">Developer</text><text x="104" y="142" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">laptop: code + git</text></g><g><rect x="224" y="60" width="240" height="262" rx="8" fill="var(--cds-chart-reference-tint)" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="240" y="84" font-weight="600" fill="var(--cds-text-primary)">GitHub</text></g><g><rect x="240" y="100" width="208" height="56" rx="8" fill="var(--cds-surface-1, none)" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="344" y="124" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">Repo</text><text x="344" y="142" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">develop + main branches</text></g><g><rect x="240" y="204" width="208" height="100" rx="8" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="256" y="228" font-weight="600" fill="var(--cds-text-primary)">Actions runner</text><text x="256" y="250" font-size="11.5" fill="var(--cds-text-primary)">test job: lint, test, build</text><text x="256" y="268" font-size="11.5" fill="var(--cds-text-primary)">deploy job: SSH + deploy.sh</text><text x="256" y="286" font-size="11.5" fill="var(--cds-text-secondary)">secrets: SSH key, host</text></g><g><rect x="520" y="60" width="216" height="120" rx="8" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="536" y="84" font-weight="600" fill="var(--cds-text-primary)">Dev EC2 (develop)</text><text x="536" y="106" font-size="11.5" fill="var(--cds-text-primary)">PM2: Node app</text><text x="536" y="124" font-size="11.5" fill="var(--cds-text-primary)">MySQL: myapp_dev</text><text x="536" y="142" font-size="11.5" fill="var(--cds-text-secondary)">git fetch from GitHub</text><text x="536" y="160" font-size="11.5" fill="var(--cds-text-secondary)">har merge pe auto deploy</text></g><g><rect x="520" y="202" width="216" height="120" rx="8" fill="var(--cds-chart-categorical-1)" fill-opacity="0.12" stroke="var(--cds-chart-categorical-1)" stroke-width="2"></rect><text x="536" y="226" font-weight="600" fill="var(--cds-text-primary)">Prod EC2 (main)</text><text x="536" y="248" font-size="11.5" fill="var(--cds-text-primary)">PM2: Node app</text><text x="536" y="266" font-size="11.5" fill="var(--cds-text-primary)">MySQL: myapp_prod</text><text x="536" y="284" font-size="11.5" fill="var(--cds-text-secondary)">deploy se pehle DB backup</text><text x="536" y="302" font-size="11.5" fill="var(--cds-text-secondary)">sirf approval ke baad</text></g><g fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"><path d="M184 128H238" marker-end="url(#arch-arrow)"></path><path d="M344 156V202" marker-end="url(#arch-arrow)"></path><path d="M448 228H488V120H518" marker-end="url(#arch-arrow)"></path><path d="M448 262H518" marker-end="url(#arch-arrow)"></path></g><text x="211" y="118" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">git push</text><text x="352" y="184" font-size="11.5" fill="var(--cds-text-secondary)">push / PR trigger</text><text x="494" y="112" font-size="11.5" fill="var(--cds-text-secondary)">SSH</text><text x="484" y="254" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">SSH</text></svg><figcaption>Architecture · laptop, GitHub, dev EC2, prod EC2</figcaption></figure>
+<p>Developer sirf GitHub tak push karta hai; servers tak pahunchne ka kaam sirf runner ka hai, aur prod tak sirf approval ke baad.</p>
+<h3 id="poori-deployyml">Poori <code>deploy.yml</code></h3>
+<pre><code class="language-yaml">name: CI/CD
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Install, lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm test --if-present
+      - run: npm run build --if-present
+
+  deploy:
+    name: Deploy to ${{ github.ref_name == &#39;main&#39; &amp;&amp; &#39;production&#39; || &#39;development&#39; }}
+    needs: test
+    if: github.event_name != &#39;pull_request&#39;
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == &#39;main&#39; &amp;&amp; &#39;production&#39; || &#39;development&#39; }}
+    steps:
+      - name: Deploy on server via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_ENV: ${{ github.ref_name == &#39;main&#39; &amp;&amp; &#39;production&#39; || &#39;development&#39; }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          APP_DIR: ${{ vars.APP_DIR }}
+          PM2_APP: ${{ vars.PM2_APP }}
+          HEALTH_URL: ${{ vars.HEALTH_URL }}
+          DB_NAME: ${{ vars.DB_NAME }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          command_timeout: 20m
+          envs: DEPLOY_ENV,BRANCH,SHA,APP_DIR,PM2_APP,HEALTH_URL,DB_NAME
+          script: |
+            set -e
+            cd &quot;$APP_DIR&quot;
+            git fetch --prune origin &quot;$BRANCH&quot;
+            git show &quot;$SHA:scripts/deploy.sh&quot; &gt; /tmp/deploy-$PM2_APP.sh
+            bash /tmp/deploy-$PM2_APP.sh</code></pre>
+<h3 id="line-by-line-samjho">Line-by-line samjho</h3>
+<table><thead><tr><th>Hissa</th><th>Kya karta hai</th><th>Kyun</th></tr></thead><tbody><tr><td><code>on.push.branches: [develop, main]</code></td><td>Sirf in do branches pe push hone pe pipeline</td><td>Feature branch pe push se deploy na ho</td></tr><tr><td><code>on.pull_request</code></td><td>PR khulne / update hone pe</td><td>Merge se pehle tests dikh jaayein</td></tr><tr><td><code>workflow_dispatch</code></td><td>Actions tab mein &quot;Run workflow&quot; button</td><td>Bina push ke dobara deploy karna ho</td></tr><tr><td><code>concurrency.group</code></td><td>Ek branch ka ek hi deploy ek waqt pe</td><td>Do deploy takra ke server na bigaadein</td></tr><tr><td><code>cancel-in-progress: false</code></td><td>Chalta hua deploy beech mein nahi rukega</td><td>Aadha deploy sabse khatarnak hota hai</td></tr><tr><td><code>actions/checkout@v4</code></td><td>Repo ka code runner pe laata hai</td><td>Bina iske machine khaali hai</td></tr><tr><td><code>setup-node</code> + <code>cache: npm</code></td><td>Node 22 install, npm cache yaad rakhta hai</td><td>Agli baar install 2-3x tez</td></tr><tr><td><code>npm ci</code></td><td><code>package-lock.json</code> se exact versions install</td><td><code>npm install</code> lock file badal sakta hai, <code>ci</code> nahi</td></tr><tr><td><code>--if-present</code></td><td>Script nahi hai toh skip, fail nahi</td><td>Lint/build script sabke paas nahi hoti</td></tr><tr><td><code>needs: test</code></td><td>Test job pass ho tabhi deploy</td><td>Toota code server tak na pahunche</td></tr><tr><td><code>if: ... != &#39;pull_request&#39;</code></td><td>PR pe deploy nahi</td><td>PR sirf jaanch ke liye hai</td></tr><tr><td><code>environment:</code></td><td><code>main</code> → production, baaki → development</td><td>Sahi server ke secrets + approval rules lagein</td></tr><tr><td><code>appleboy/ssh-action</code></td><td>Runner se server mein SSH karke script chalata hai</td><td>Server pe kaam karwane ka tareeka</td></tr><tr><td><code>env</code> + <code>envs</code></td><td>Values server ke shell tak bhejta hai</td><td><code>deploy.sh</code> ko branch, commit, path chahiye</td></tr><tr><td><code>command_timeout: 20m</code></td><td>20 minute se zyada laga toh fail</td><td>Atka hua deploy hamesha na latke</td></tr><tr><td><code>git show &quot;$SHA:scripts/deploy.sh&quot;</code></td><td>Naye commit wali deploy script nikalta hai</td><td>Script badli ho toh purani na chale</td></tr></tbody></table>
+<h3 id="ek-deploy-ki-timeline-andaazan">Ek deploy ki timeline (andaazan)</h3>
+<table><thead><tr><th>Step</th><th>Kahan</th><th>Lagbhag samay</th></tr></thead><tbody><tr><td>Checkout + Node setup</td><td>GitHub runner</td><td>10-20 sec</td></tr><tr><td><code>npm ci</code> (cache ke saath)</td><td>GitHub runner</td><td>15-60 sec</td></tr><tr><td>Lint + test + build</td><td>GitHub runner</td><td>Project pe depend</td></tr><tr><td>Approval (sirf prod)</td><td>Insaan</td><td>Jab tak approve na ho</td></tr><tr><td>SSH + DB backup + <code>npm ci</code> + migrate + reload</td><td>Server</td><td>1-3 min</td></tr></tbody></table>
+<p>Ye andaaze chhote/medium Node apps ke liye hain; tumhare project ka asli samay Actions tab mein har step ke saamne dikhega.</p>
+<h2 id="8-deploysh-server-pe-kya-hota-hai">8. <code>deploy.sh</code>: server pe kya hota hai</h2>
+<p><code>deploy.sh</code> server pe 6 kaam karti hai: backup, code update, install, migrate, restart, health check. Inmein se koi bhi fail hua toh <code>rollback()</code> code ko pichhle commit pe le aata hai.</p>
+<figure class="diagram"><svg width="100%" viewBox="0 0 760 360" role="img" aria-label="Koi bhi step fail hua toh deploy.sh khud purane commit pe laut aati hai" font-size="13"><defs><marker id="ds-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--cds-chart-axis)"></path></marker></defs><text x="24" y="32" font-size="15" font-weight="600" fill="var(--cds-text-primary)">Koi bhi step fail hua toh deploy.sh khud purane commit pe laut aati hai</text><g fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"><path d="M191 100H215" marker-end="url(#ds-arrow)"></path><path d="M367 100H391" marker-end="url(#ds-arrow)"></path><path d="M543 100H567" marker-end="url(#ds-arrow)"></path><path d="M644 128V174" marker-end="url(#ds-arrow)"></path><path d="M569 204H540" marker-end="url(#ds-arrow)"></path><path d="M398 204H369" marker-end="url(#ds-arrow)"></path><path d="M468 238V278" marker-end="url(#ds-arrow)"></path></g><path d="M116 128V308H346" fill="none" stroke="var(--cds-chart-status-critical)" stroke-width="1.25" stroke-dasharray="5 4" marker-end="url(#ds-arrow)"></path><g><rect x="41" y="72" width="150" height="56" rx="8" fill="none" fill-opacity="1" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="116" y="97" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">DB backup</text><text x="116" y="116" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">sirf production</text></g><g><rect x="217" y="72" width="150" height="56" rx="8" fill="none" fill-opacity="1" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="292" y="97" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">git reset --hard</text><text x="292" y="116" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">exact commit pe</text></g><g><rect x="393" y="72" width="150" height="56" rx="8" fill="none" fill-opacity="1" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="468" y="97" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">npm ci + build</text><text x="468" y="116" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">dependencies</text></g><g><rect x="569" y="72" width="150" height="56" rx="8" fill="none" fill-opacity="1" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="644" y="97" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">npm run migrate</text><text x="644" y="116" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">DB schema update</text></g><g><rect x="569" y="176" width="150" height="56" rx="8" fill="none" fill-opacity="1" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="644" y="201" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">pm2 reload</text><text x="644" y="220" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">prune, phir reload</text></g><g><polygon points="398,204 468,170 538,204 468,238" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"></polygon><text x="468" y="208" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">Health OK?</text></g><g><rect x="217" y="176" width="150" height="56" rx="8" fill="var(--cds-chart-status-good)" fill-opacity="0.12" stroke="var(--cds-chart-status-good)" stroke-width="2"></rect><text x="292" y="201" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">Deploy done</text><text x="292" y="220" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">naya version live</text></g><g><rect x="348" y="280" width="240" height="56" rx="8" fill="var(--cds-chart-status-critical)" fill-opacity="0.10" stroke="var(--cds-chart-status-critical)" stroke-width="2"></rect><text x="468" y="305" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">rollback()</text><text x="468" y="324" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">purana commit + npm ci + reload</text></g><text x="382.5" y="192" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">haan</text><text x="476" y="262" font-size="11.5" fill="var(--cds-text-secondary)">nahi</text><text x="124" y="264" font-size="11.5" fill="var(--cds-text-secondary)">koi bhi step fail</text><text x="124" y="280" font-size="11.5" fill="var(--cds-text-secondary)">(trap ERR)</text></svg><figcaption>deploy.sh flow · 6 steps, health check, rollback</figcaption></figure>
+<p>Laal dashed raasta kisi bhi step ke fail hone pe chalta hai; health check fail hone pe bhi wahi <code>rollback()</code>.</p>
+<p>Ek baarik baat: backup hi fail ho jaaye toh rollback ki zaroorat nahi padti, kyunki tab tak code badla hi nahi hota. Script wahin ruk jaati hai aur purana version chalta rehta hai.</p>
+<h3 id="bash-ki-4-zaroori-cheezein">Bash ki 4 zaroori cheezein</h3>
+<table><thead><tr><th>Code</th><th>Matlab</th><th>Iske bina kya hota</th></tr></thead><tbody><tr><td><code>set -e</code></td><td>Koi bhi command fail ho toh script ruk jaaye</td><td><code>npm ci</code> fail hone ke baad bhi restart ho jaata</td></tr><tr><td><code>set -u</code></td><td>Undefined variable use hua toh error</td><td><code>cd $APP_DIRR</code> (typo) chupchaap galat jagah chalta</td></tr><tr><td><code>set -o pipefail</code></td><td><code>a | b</code> mein <code>a</code> fail hua toh bhi error</td><td><code>mysqldump</code> fail, phir bhi khaali backup file ban jaati</td></tr><tr><td><code>set -E</code> + <code>trap ... ERR</code></td><td>Error aate hi ek function chalao</td><td>Rollback kabhi automatic nahi hota</td></tr></tbody></table>
+<h3 id="step-by-step">Step-by-step</h3>
+<p><strong>Step 0: Zaroori values check</strong></p>
+<pre><code class="language-bash">: &quot;${APP_DIR:?APP_DIR missing}&quot;</code></pre>
+<p>Agar <code>APP_DIR</code> khaali hai toh script wahin ruk jaati hai aur message dikhaati hai. Galat folder mein <code>git reset --hard</code> chal jaana bahut bura hota.</p>
+<p><strong>Step 1: Purana commit yaad rakho</strong></p>
+<pre><code class="language-bash">PREV_SHA=&quot;$(git rev-parse HEAD)&quot;</code></pre>
+<p>Rollback ko pata hona chahiye ki wapas kahan jaana hai.</p>
+<p><strong>Step 2: DB backup (sirf production)</strong></p>
+<pre><code class="language-bash">mysqldump --single-transaction --routines --triggers --no-tablespaces &quot;$DB_NAME&quot; | gzip &gt; &quot;$BACKUP_FILE&quot;</code></pre>
+<table><thead><tr><th>Flag</th><th>Kyun</th></tr></thead><tbody><tr><td><code>--single-transaction</code></td><td>InnoDB tables ko lock kiye bina consistent snapshot; site chalti rehti hai</td></tr><tr><td><code>--routines --triggers</code></td><td>Stored procedures aur triggers bhi backup mein</td></tr><tr><td><code>--no-tablespaces</code></td><td>RDS / MySQL 8 pe PROCESS privilege ke bina error na aaye</td></tr><tr><td><code>| gzip</code></td><td>Backup 5-10x chhota</td></tr></tbody></table>
+<p>Password command mein nahi, <code>~/.my.cnf</code> file se aata hai, taaki <code>ps</code> command ya logs mein na dikhe. Last 10 backups rakhe jaate hain, purane delete.</p>
+<p><strong>Step 3: Rollback trap lagao</strong></p>
+<pre><code class="language-bash">rollback() { ... git reset --hard &quot;$PREV_SHA&quot;; npm ci; pm2 reload ...; }
+trap &#39;rollback; exit 1&#39; ERR</code></pre>
+<p>Iske baad koi bhi command fail hui toh <code>rollback</code> apne aap chalega.</p>
+<p><strong>Step 4: Code update</strong></p>
+<pre><code class="language-bash">git reset --hard &quot;$SHA&quot;</code></pre>
+<p><code>git pull</code> ki jagah exact commit pe jaate hain. Server pe kisi ne file haath se badli ho toh bhi wo hat jaayegi, aur server hamesha wahi code chalayega jo GitHub pe test hua.</p>
+<p><strong>Step 5: Install + build</strong></p>
+<pre><code class="language-bash">npm ci
+npm run build --if-present</code></pre>
+<p><strong>Step 6: Migrations</strong></p>
+<pre><code class="language-bash">npm run migrate --if-present</code></pre>
+<p>Naye schema changes DB pe lagte hain. Ye <code>npm prune</code> se pehle hai kyunki <code>sequelize-cli</code> jaise tools aksar devDependency hote hain.</p>
+<p><strong>Step 7: devDependencies hatao</strong></p>
+<pre><code class="language-bash">npm prune --omit=dev</code></pre>
+<p>Server pe sirf wahi packages rahein jo production mein chahiye. Kam disk, kam security risk.</p>
+<p><strong>Step 8: Zero-downtime restart</strong></p>
+<pre><code class="language-bash">pm2 reload &quot;$PM2_APP&quot; --update-env</code></pre>
+<p><code>restart</code> sab process ek saath maarta hai (kuch second site down). <code>reload</code> ek-ek karke naye process chalu karta hai, purane tab band hote hain jab naye ready hon. Ye cluster mode (<code>pm2 start app.js -i max</code>) mein poora zero-downtime hota hai.</p>
+<p><strong>Step 9: Health check</strong></p>
+<pre><code class="language-bash">for _ in {1..10}; do curl -fsS -o /dev/null &quot;$HEALTH_URL&quot; &amp;&amp; return 0; sleep 3; done</code></pre>
+<p>30 second tak har 3 second mein app se poochta hai &quot;zinda ho?&quot;. Jawab nahi aaya toh rollback. App mein ek chhota route banao:</p>
+<pre><code class="language-js">app.get(&#39;/health&#39;, async (req, res) =&gt; {
+  try {
+    await pool.query(&#39;SELECT 1&#39;);   // DB bhi check
+    res.json({ status: &#39;ok&#39; });
+  } catch (e) {
+    res.status(500).json({ status: &#39;db-down&#39; });
+  }
+});</code></pre>
+<h2 id="9-ssh-aur-keys">9. SSH aur keys</h2>
+<p>SSH key ek taala-chaabi ki jodi hai: <strong>public key taala hai</strong> (jise server pe laga do, kisi ko dikh jaaye koi dikkat nahi), <strong>private key chaabi hai</strong> (jo sirf login karne wale ke paas rehti hai). Server pe jo taala laga hai, sirf uski chaabi wala andar aa sakta hai. Password ki zaroorat hi nahi.</p>
+<figure class="diagram"><svg width="100%" viewBox="0 0 760 280" role="img" aria-label="Private key login karti hai, public key wahan lagti hai jahan login hona hai" font-size="13"><defs><marker id="ssh-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--cds-chart-axis)"></path></marker></defs><text x="24" y="32" font-size="15" font-weight="600" fill="var(--cds-text-primary)">Private key login karti hai, public key wahan lagti hai jahan login hona hai</text><text x="24" y="102" font-weight="600" fill="var(--cds-text-primary)">Key 1</text><text x="24" y="120" font-size="11.5" fill="var(--cds-text-secondary)">gha_deploy</text><text x="24" y="194" font-weight="600" fill="var(--cds-text-primary)">Key 2</text><text x="24" y="212" font-size="11.5" fill="var(--cds-text-secondary)">github_deploy</text><g fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"><path d="M404 104H522" marker-end="url(#ssh-arrow)"></path><path d="M404 196H522" marker-end="url(#ssh-arrow)"></path></g><g><rect x="164" y="76" width="240" height="56" rx="8" fill="var(--cds-chart-categorical-2)" fill-opacity="0.12" stroke="var(--cds-chart-categorical-2)" stroke-width="1.5"></rect><text x="284" y="101" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">GitHub Actions</text><text x="284" y="120" text-anchor="middle" font-size="11.5" fill="var(--cds-text-primary)">chaabi: SSH_PRIVATE_KEY secret</text></g><g><rect x="524" y="76" width="212" height="56" rx="8" fill="var(--cds-chart-categorical-1)" fill-opacity="0.12" stroke="var(--cds-chart-categorical-1)" stroke-width="1.5"></rect><text x="630" y="101" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">Dev + Prod EC2</text><text x="630" y="120" text-anchor="middle" font-size="11.5" fill="var(--cds-text-primary)">taala: ~/.ssh/authorized_keys</text></g><g><rect x="164" y="168" width="240" height="56" rx="8" fill="var(--cds-chart-categorical-2)" fill-opacity="0.12" stroke="var(--cds-chart-categorical-2)" stroke-width="1.5"></rect><text x="284" y="193" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">Har EC2 server</text><text x="284" y="212" text-anchor="middle" font-size="11.5" fill="var(--cds-text-primary)">chaabi: ~/.ssh/github_deploy</text></g><g><rect x="524" y="168" width="212" height="56" rx="8" fill="var(--cds-chart-categorical-1)" fill-opacity="0.12" stroke="var(--cds-chart-categorical-1)" stroke-width="1.5"></rect><text x="630" y="193" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">GitHub repo</text><text x="630" y="212" text-anchor="middle" font-size="11.5" fill="var(--cds-text-primary)">taala: Deploy keys (read-only)</text></g><text x="464" y="96" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">SSH login</text><text x="464" y="188" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">git fetch</text><g><rect x="164" y="246" width="14" height="14" rx="3" fill="var(--cds-chart-categorical-2)" fill-opacity="0.12" stroke="var(--cds-chart-categorical-2)" stroke-width="1.5"></rect><text x="186" y="257" font-size="11.5" fill="var(--cds-text-secondary)">chaabi = private key (kabhi share nahi)</text><rect x="444" y="246" width="14" height="14" rx="3" fill="var(--cds-chart-categorical-1)" fill-opacity="0.12" stroke="var(--cds-chart-categorical-1)" stroke-width="1.5"></rect><text x="466" y="257" font-size="11.5" fill="var(--cds-text-secondary)">taala = public key (share safe)</text></g></svg><figcaption>SSH keys · 2 jodiyaan, kaun kahan</figcaption></figure>
+<p>Arrow us taraf hai jidhar login hota hai: chaabi wala, taale wale ke paas jaata hai.</p>
+<h3 id="hamare-setup-mein-2-jodiyaan">Hamare setup mein 2 jodiyaan</h3>
+<table><thead><tr><th>Jodi</th><th>Taala (public) kahan</th><th>Chaabi (private) kahan</th><th>Kaam</th></tr></thead><tbody><tr><td><code>gha_deploy</code></td><td>Dono servers ki <code>~/.ssh/authorized_keys</code></td><td>GitHub secret <code>SSH_PRIVATE_KEY</code></td><td>GitHub Actions server mein login kare</td></tr><tr><td><code>github_deploy</code> (har server ki alag)</td><td>GitHub repo → Deploy keys</td><td>Server ki <code>~/.ssh/github_deploy</code></td><td>Server GitHub se <code>git fetch</code> kare</td></tr></tbody></table>
+<h3 id="key-1-banana-laptop-pe-ek-baar">Key 1 banana (laptop pe, ek baar)</h3>
+<pre><code class="language-bash">ssh-keygen -t ed25519 -C &quot;github-actions&quot; -f gha_deploy -N &quot;&quot;</code></pre>
+<table><thead><tr><th>Flag</th><th>Matlab</th></tr></thead><tbody><tr><td><code>-t ed25519</code></td><td>Modern, chhoti aur fast key type (RSA se behtar)</td></tr><tr><td><code>-C &quot;github-actions&quot;</code></td><td>Comment, bas pehchaan ke liye</td></tr><tr><td><code>-f gha_deploy</code></td><td>File ka naam</td></tr><tr><td><code>-N &quot;&quot;</code></td><td>Passphrase khaali (pipeline password type nahi kar sakti)</td></tr></tbody></table>
+<p>Public key dono servers pe:</p>
+<pre><code class="language-bash">mkdir -p ~/.ssh &amp;&amp; chmod 700 ~/.ssh
+echo &quot;&lt;gha_deploy.pub ka content&gt;&quot; &gt;&gt; ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys</code></pre>
+<p>Private key (<code>gha_deploy</code>, BEGIN se END tak poora) GitHub → Settings → Environments → har environment → secret <code>SSH_PRIVATE_KEY</code>.</p>
+<h3 id="key-2-banana-har-server-pe">Key 2 banana (har server pe)</h3>
+<pre><code class="language-bash">ssh-keygen -t ed25519 -C &quot;prod-server&quot; -f ~/.ssh/github_deploy -N &quot;&quot;
+cat ~/.ssh/github_deploy.pub     # ye GitHub → Deploy keys mein, read-only
+printf &#39;Host github.com\n  IdentityFile ~/.ssh/github_deploy\n&#39; &gt;&gt; ~/.ssh/config
+chmod 600 ~/.ssh/config
+ssh -T git@github.com            # &quot;successfully authenticated&quot; aana chahiye</code></pre>
+<h3 id="permissions-kyun-itni-strict">Permissions kyun itni strict?</h3>
+<p>SSH bahut shakki hai: agar <code>~/.ssh</code> ya <code>authorized_keys</code> doosre users bhi padh/likh sakte hain, toh SSH key ko ignore kar deta hai aur <code>Permission denied (publickey)</code> deta hai. Isliye <code>700</code> folder ke liye aur <code>600</code> files ke liye.</p>
+<h3 id="port-22-aur-github-runners">Port 22 aur GitHub runners</h3>
+<p>GitHub ke runners ke IP har baar badalte hain, isliye EC2 Security Group mein port 22 sabke liye (<code>0.0.0.0/0</code>) kholna padta hai. Isse safe rakhne ke liye server pe password login band karo (<code>/etc/ssh/sshd_config</code> mein <code>PasswordAuthentication no</code>). Aur zyada safe tareeka (bina port 22 khole) section 17 mein hai: AWS SSM.</p>
+<h2 id="10-database-migrations">10. Database migrations</h2>
+<p>Migration DB ke liye git jaisa hai: har schema change ek numbered file hai, jo code ke saath commit hoti hai aur har DB pe ek hi order mein, sirf ek baar chalti hai. Isi se dev aur prod ka schema hamesha same level pe rehta hai.</p>
+<h3 id="migration-kaise-kaam-karti-hai">Migration kaise kaam karti hai</h3>
+<p>Har DB mein ek chhoti table hoti hai (<code>SequelizeMeta</code>, <code>knex_migrations</code> ya <code>_prisma_migrations</code>) jisme likha hota hai ki kaunsi migration files chal chuki hain. <code>npm run migrate</code> sirf wo files chalata hai jo is list mein nahi hain.</p>
+<table><thead><tr><th>Migration file</th><th>Dev DB</th><th>Prod DB</th></tr></thead><tbody><tr><td><code>001_baseline.js</code></td><td>Chal chuki</td><td>Chal chuki</td></tr><tr><td><code>002_add_phone_to_users.js</code></td><td>Chal chuki</td><td>Chal chuki</td></tr><tr><td><code>003_create_orders.js</code></td><td>Chal chuki (develop merge pe)</td><td>Pending, <code>main</code> merge pe chalegi</td></tr></tbody></table>
+<h3 id="ek-migration-ka-example-knex">Ek migration ka example (Knex)</h3>
+<pre><code class="language-js">// migrations/20261103_add_phone_to_users.js
+exports.up = (knex) =&gt;
+  knex.schema.alterTable(&#39;users&#39;, (t) =&gt; {
+    t.string(&#39;phone&#39;, 15).nullable();
+  });
+
+exports.down = (knex) =&gt;
+  knex.schema.alterTable(&#39;users&#39;, (t) =&gt; {
+    t.dropColumn(&#39;phone&#39;);
+  });</code></pre>
+<p><code>up</code> = change lagao, <code>down</code> = change wapas lo.</p>
+<h3 id="tools-ke-commands">Tools ke commands</h3>
+<table><thead><tr><th>Tool</th><th>Nayi migration banao</th><th>Chalao (<code>migrate</code> script)</th><th>Wapas lo</th></tr></thead><tbody><tr><td>Knex</td><td><code>npx knex migrate:make add_phone</code></td><td><code>knex migrate:latest</code></td><td><code>knex migrate:rollback</code></td></tr><tr><td>Sequelize</td><td><code>npx sequelize-cli migration:generate --name add-phone</code></td><td><code>sequelize-cli db:migrate</code></td><td><code>sequelize-cli db:migrate:undo</code></td></tr><tr><td>Prisma</td><td><code>npx prisma migrate dev --name add_phone</code></td><td><code>prisma migrate deploy</code></td><td>Nayi migration likh ke</td></tr></tbody></table>
+<h3 id="baseline-purane-db-ko-migrations-pe-laana">Baseline: purane DB ko migrations pe laana</h3>
+<p>Hamare dono DB pehle se bane hue hain aur same level pe hain. Inhe migrations pe laane ke liye:</p>
+<ol><li><p>Current schema ko ek pehli migration (<code>001_baseline</code>) mein likho, jaisa DB abhi hai.</p></li><li><p>Is migration ko kisi DB pe <strong>chalao mat</strong>. Bas dono DB ki tracking table mein entry daal do ki ye chal chuki hai.</p></li><li><p>Naye DB (jaise kisi developer ka local) pe ye migration poora schema bana degi.</p></li><li><p>Iske baad har change nayi migration file se.</p></li></ol>
+<h3 id="golden-rules">Golden rules</h3>
+<ul><li><p>Chal chuki migration file ko kabhi edit mat karo. Galti hui toh nayi migration likho jo use theek kare.</p></li><li><p>Prod pe kabhi haath se <code>ALTER TABLE</code> mat chalao. Ek baar kiya toh dev aur prod ka schema alag ho jaayega.</p></li><li><p>Badi tables (lakhon rows) pe index ya column add karne se table lock ho sakti hai; pehle dev pe utne data ke saath time dekho.</p></li></ul>
+<h3 id="expand-contract-column-rename-bina-downtime">Expand-contract: column rename bina downtime</h3>
+<p>Seedha <code>RENAME COLUMN name TO full_name</code> karoge toh deploy ke beech ke kuch second mein purana code <code>name</code> dhundhega aur crash hoga. Aur rollback karne pe bhi purana code tootega. Isliye 3 deploy mein karo:</p>
+<table><thead><tr><th>Deploy</th><th>Migration</th><th>Code</th><th>Rollback safe?</th></tr></thead><tbody><tr><td>1. Expand</td><td><code>full_name</code> column add</td><td>Dono columns mein likho, <code>name</code> se padho</td><td>Haan, purana code <code>name</code> use karta hai</td></tr><tr><td>2. Migrate</td><td>Purana data copy: <code>UPDATE users SET full_name = name</code></td><td><code>full_name</code> se padho</td><td>Haan, <code>name</code> abhi bhi hai</td></tr><tr><td>3. Contract</td><td><code>name</code> column drop</td><td>Sirf <code>full_name</code></td><td>Haan, ab koi <code>name</code> use nahi karta</td></tr></tbody></table>
+<p>Yahi pattern column delete, type change, aur table split pe bhi lagta hai: pehle naya add karo, phir purana hatao, kabhi ek saath nahi.</p>
+<h2 id="11-secrets-aur-security">11. Secrets aur security</h2>
+<p>Pipeline ke paas production ki chaabi hai, isliye pipeline ki security hi production ki security hai. Ye 10 niyam follow karo.</p>
+<table><thead><tr><th>#</th><th>Niyam</th><th>Kaise</th></tr></thead><tbody><tr><td>1</td><td>Secrets kabhi git mein nahi</td><td><code>.env</code>, <code>*.pem</code>, private keys <code>.gitignore</code> mein</td></tr><tr><td>2</td><td>Galti se commit ho gaya toh key <strong>badlo</strong></td><td>Commit delete karna kaafi nahi, history mein rehta hai; nayi key banao, purani hatao</td></tr><tr><td>3</td><td>Har kaam ki alag key</td><td>Deploy key alag, apni login key alag, dev aur prod alag</td></tr><tr><td>4</td><td>Kam se kam permission</td><td>Deploy key read-only; DB backup user ko sirf <code>SELECT, LOCK TABLES, SHOW VIEW, TRIGGER, EVENT</code></td></tr><tr><td>5</td><td>Production pe approval</td><td>Environment → Required reviewers</td></tr><tr><td>6</td><td>Prod sirf <code>main</code> se</td><td>Environment → Deployment branches → <code>main</code></td></tr><tr><td>7</td><td>Third-party actions ko pin karo</td><td><code>appleboy/ssh-action@v1</code> theek; aur safe: poora commit SHA</td></tr><tr><td>8</td><td>Secrets ko print mat karo</td><td><code>echo $SECRET</code> ya <code>set -x</code> logs mein leak kar sakte hain</td></tr><tr><td>9</td><td><code>GITHUB_TOKEN</code> ki permission kam</td><td>Workflow mein <code>permissions: contents: read</code></td></tr><tr><td>10</td><td>Dependencies scan</td><td>Repo → Settings → Code security → Dependabot alerts on; CI mein <code>npm audit --audit-level=high</code></td></tr></tbody></table>
+<h3 id="fork-se-aaye-pr-ka-khatra">Fork se aaye PR ka khatra</h3>
+<p>Public repo mein koi bhi fork karke PR bhej sakta hai. Agar wo PR secrets ke saath chal gaya toh wo <code>deploy.yml</code> badal ke secrets chura sakta hai. GitHub by default fork ke PR ko secrets nahi deta. Isliye <code>pull_request_target</code> trigger tab tak use mat karo jab tak iska khatra poori tarah na samjho.</p>
+<h3 id="workflow-mein-permissions">Workflow mein permissions</h3>
+<pre><code class="language-yaml">permissions:
+  contents: read   # code padh sakta hai, likh nahi sakta</code></pre>
+<p>Ise <code>deploy.yml</code> mein <code>on:</code> ke neeche daal do. Hamari pipeline ko repo mein kuch likhna nahi hai, toh read kaafi hai.</p>
+<h2 id="12-backup-rollback-aur-disaster-recovery">12. Backup, rollback aur disaster recovery</h2>
+<p>Rollback ke do hisse hain, code aur data. Code wapas lana aasaan aur safe hai; data wapas lana mushkil hai kyunki backup ke baad aaye naye orders ya users bhi chale jaate hain.</p>
+<h3 id="kya-galat-hua-kya-karna-hai">Kya galat hua, kya karna hai</h3>
+<table><thead><tr><th>Situation</th><th>Kya karo</th><th>Data loss?</th></tr></thead><tbody><tr><td>Health check fail</td><td>Kuch nahi, <code>deploy.sh</code> khud code rollback kar deti hai</td><td>Nahi</td></tr><tr><td>Deploy ho gaya, baad mein bug mila</td><td>Git mein revert commit, <code>main</code> pe merge, pipeline naya deploy karegi</td><td>Nahi</td></tr><tr><td>Bahut urgent, pipeline ka wait nahi</td><td>Server pe manual code rollback (neeche)</td><td>Nahi</td></tr><tr><td>Migration ne data bigaad diya</td><td>Pehle fix-forward migration socho; last option backup restore</td><td>Haan, backup ke baad ka</td></tr><tr><td>Server hi mar gaya</td><td>Naya EC2, setup steps, latest backup restore</td><td>Last backup tak</td></tr></tbody></table>
+<h3 id="sabse-achha-rollback-git-revert">Sabse achha rollback: <code>git revert</code></h3>
+<pre><code class="language-bash">git checkout main &amp;&amp; git pull
+git revert &lt;kharab_commit_sha&gt;
+git push    # branch protection hai toh PR banao</code></pre>
+<p>Isse history saaf rehti hai aur deploy usi pipeline se hota hai jisse baaki sab.</p>
+<h3 id="manual-code-rollback-emergency">Manual code rollback (emergency)</h3>
+<pre><code class="language-bash">cd /var/www/app
+git log --oneline -5
+git reset --hard &lt;purana_sha&gt;
+npm ci &amp;&amp; npm prune --omit=dev
+pm2 reload myapp</code></pre>
+<p>Baad mein <code>main</code> mein bhi revert zaroor karna, warna agla deploy kharab code wapas le aayega.</p>
+<h3 id="db-restore">DB restore</h3>
+<pre><code class="language-bash">ls -lt ~/db-backups | head
+# Pehle alag DB mein restore karke check karo:
+mysql -e &quot;CREATE DATABASE restore_check&quot;
+gunzip &lt; ~/db-backups/myapp_prod_20261103_221500_ab12cd3.sql.gz | mysql restore_check
+# Sab theek laga toh asli DB pe (app band karke):
+pm2 stop myapp
+gunzip &lt; ~/db-backups/&lt;file&gt;.sql.gz | mysql myapp_prod
+pm2 start myapp</code></pre>
+<h3 id="3-2-1-backup-rule">3-2-1 backup rule</h3>
+<p>Deploy wala backup usi server pe hai. Server ki disk gayi toh backup bhi gaya. Isliye:</p>
+<ul><li><p><strong>3</strong> copies data ki</p></li><li><p><strong>2</strong> alag tarah ki jagah (server disk + S3)</p></li><li><p><strong>1</strong> copy doosri location / region mein</p></li></ul>
+<p>Roz raat ka backup S3 mein bhejo:</p>
+<pre><code class="language-bash"># crontab -e, roz raat 2 baje
+0 2 * * * mysqldump --single-transaction --no-tablespaces myapp_prod | gzip | aws s3 cp - s3://myapp-backups/daily/$(date +\%F).sql.gz</code></pre>
+<p>RDS use karte ho toh automated backups aur point-in-time recovery console se on kar do.</p>
+<p><strong>Backup tabhi backup hai jab restore karke dekha ho.</strong> Mahine mein ek baar kisi backup ko test DB mein restore karke check karo.</p>
+<h2 id="13-deployment-strategies">13. Deployment strategies</h2>
+<p>Naya version users tak kaise pahunche, iske 5 tareeke hain. Hamara setup <strong>rolling</strong> hai (<code>pm2 reload</code> ek-ek process badalta hai). Jaise app bada ho, blue-green ya canary pe ja sakte ho.</p>
+<table><thead><tr><th>Strategy</th><th>Kaise kaam karti hai</th><th>Downtime</th><th>Rollback speed</th><th>Kharcha</th><th>Kab use karein</th></tr></thead><tbody><tr><td>Recreate</td><td>Sab band, naya chalu</td><td>Haan, kuch second</td><td>Dheema (dobara deploy)</td><td>Sabse kam</td><td>Chhote internal tools</td></tr><tr><td>Rolling</td><td>Ek-ek instance/process badlo</td><td>Nahi</td><td>Medium</td><td>Kam</td><td>Zyada tar apps (hamara setup)</td></tr><tr><td>Blue-green</td><td>Do poore environment; traffic ek jhatke mein naye pe</td><td>Nahi</td><td>Turant (traffic wapas)</td><td>2x servers</td><td>Jahan rollback seconds mein chahiye</td></tr><tr><td>Canary</td><td>Pehle 5% users naye pe, sab theek toh 25%, 50%, 100%</td><td>Nahi</td><td>Turant (5% hi affected)</td><td>Medium + monitoring</td><td>Bade user base wale apps</td></tr><tr><td>Feature flags</td><td>Code deploy ho jaata hai par feature off; baad mein switch on</td><td>Nahi</td><td>Turant (flag off)</td><td>Flag system</td><td>Bade features, A/B testing</td></tr></tbody></table>
+<figure class="diagram"><svg width="100%" viewBox="0 0 760 336" role="img" aria-label="Blue-green poora traffic ek jhatke mein badalta hai, canary thoda-thoda" font-size="13"><defs><marker id="bg-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--cds-chart-axis)"></path></marker></defs><text x="24" y="30" font-size="15" font-weight="600" fill="var(--cds-text-primary)">Blue-green poora traffic ek jhatke mein badalta hai, canary thoda-thoda</text><rect x="24" y="48" width="348" height="272" rx="8" fill="none" stroke="var(--cds-chart-grid)"></rect><rect x="388" y="48" width="348" height="272" rx="8" fill="none" stroke="var(--cds-chart-grid)"></rect><text x="40" y="72" font-weight="600" fill="var(--cds-text-primary)">Blue-green</text><text x="404" y="72" font-weight="600" fill="var(--cds-text-primary)">Canary</text><g fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"><path d="M198 128V150" marker-end="url(#bg-arrow)"></path><path d="M198 188V212H110V232" marker-end="url(#bg-arrow)"></path><path d="M198 212H286V232" marker-end="url(#bg-arrow)"></path></g><g fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"><path d="M562 128V150" marker-end="url(#bg-arrow)"></path><path d="M562 188V212H474V232" marker-end="url(#bg-arrow)"></path><path d="M562 212H650V232" marker-end="url(#bg-arrow)"></path></g><g><rect x="138" y="92" width="120" height="36" rx="8" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="198" y="115" text-anchor="middle" fill="var(--cds-text-primary)">Users</text></g><g><rect x="128" y="152" width="140" height="36" rx="8" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="198" y="175" text-anchor="middle" fill="var(--cds-text-primary)">Load balancer</text></g><g><rect x="40" y="234" width="140" height="48" rx="8" fill="none" fill-opacity="1" stroke="var(--cds-chart-axis)" stroke-width="1.25" stroke-dasharray="4 4"></rect><text x="110" y="255" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">v1 (blue)</text><text x="110" y="272" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">standby, 0%</text></g><g><rect x="216" y="234" width="140" height="48" rx="8" fill="var(--cds-chart-categorical-1)" fill-opacity="0.12" stroke="var(--cds-chart-categorical-1)" stroke-width="2" stroke-dasharray="none"></rect><text x="286" y="255" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">v2 (green)</text><text x="286" y="272" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">live, 100%</text></g><text x="198" y="306" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">gadbad? LB wapas blue pe, seconds mein</text><g><rect x="502" y="92" width="120" height="36" rx="8" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="562" y="115" text-anchor="middle" fill="var(--cds-text-primary)">Users</text></g><g><rect x="492" y="152" width="140" height="36" rx="8" fill="none" stroke="var(--cds-chart-axis)" stroke-width="1.25"></rect><text x="562" y="175" text-anchor="middle" fill="var(--cds-text-primary)">Load balancer</text></g><g><rect x="404" y="234" width="140" height="48" rx="8" fill="none" fill-opacity="1" stroke="var(--cds-chart-axis)" stroke-width="1.25" stroke-dasharray="none"></rect><text x="474" y="255" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">v1 (purana)</text><text x="474" y="272" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">95% users</text></g><g><rect x="580" y="234" width="140" height="48" rx="8" fill="var(--cds-chart-categorical-1)" fill-opacity="0.12" stroke="var(--cds-chart-categorical-1)" stroke-width="2" stroke-dasharray="none"></rect><text x="650" y="255" text-anchor="middle" font-weight="600" fill="var(--cds-text-primary)">v2 (naya)</text><text x="650" y="272" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">5% users</text></g><text x="562" y="306" text-anchor="middle" font-size="11.5" fill="var(--cds-text-secondary)">sab theek? 25%, 50%, phir 100%</text></svg><figcaption>Blue-green vs canary · traffic kaise badalta hai</figcaption></figure>
+<p>Blue-green mein rollback matlab traffic wapas purane pe; canary mein galti sirf 5% users tak rehti hai.</p>
+<h3 id="blue-green-aws-pe-kaise-dikhta-hai">Blue-green AWS pe kaise dikhta hai</h3>
+<p>Do EC2 (ya do Auto Scaling groups) ek Application Load Balancer ke peeche. Blue pe purana version chal raha hai. Green pe naya deploy karo, test karo, phir ALB ka target group Blue se Green pe switch. Gadbad hui toh wapas Blue pe switch, bas.</p>
+<h3 id="feature-flag-ka-simple-example">Feature flag ka simple example</h3>
+<pre><code class="language-js">// .env: FEATURE_NEW_CHECKOUT=false
+if (process.env.FEATURE_NEW_CHECKOUT === &#39;true&#39;) {
+  return newCheckout(req, res);
+}
+return oldCheckout(req, res);</code></pre>
+<p>Code prod pe pahunch gaya, par users ko tab dikhega jab flag <code>true</code> hoga. Isse &quot;deploy&quot; aur &quot;release&quot; alag ho jaate hain.</p>
+<h2 id="14-ci-mein-testing">14. CI mein testing</h2>
+<p>Pipeline utni hi achhi hai jitne uske tests. Tests nahi hain toh pipeline bas &quot;tez tareeke se bug deploy karne ki machine&quot; hai.</p>
+<h3 id="test-pyramid">Test pyramid</h3>
+<table><thead><tr><th>Level</th><th>Kya test karta hai</th><th>Kitne</th><th>Speed</th><th>Node tools</th></tr></thead><tbody><tr><td>Unit</td><td>Ek function akela (DB, network ke bina)</td><td>Sabse zyada (70%)</td><td>Milliseconds</td><td>Jest, Vitest, <code>node:test</code></td></tr><tr><td>Integration</td><td>API + asli DB saath mein</td><td>Medium (20%)</td><td>Seconds</td><td>Jest + Supertest + MySQL container</td></tr><tr><td>End-to-end (E2E)</td><td>Browser mein poora user flow</td><td>Kam (10%)</td><td>Minutes</td><td>Playwright, Cypress</td></tr></tbody></table>
+<p>Neeche wide (bahut saare tez unit tests), upar patla (kuch dheeme E2E tests). Ulta pyramid matlab slow aur toot-ne wali pipeline.</p>
+<h3 id="unit-test-example">Unit test example</h3>
+<pre><code class="language-js">// utils/price.js
+exports.withGst = (amount) =&gt; Math.round(amount * 1.18 * 100) / 100;
+
+// utils/price.test.js
+const { withGst } = require(&#39;./price&#39;);
+test(&#39;18% GST lagta hai&#39;, () =&gt; {
+  expect(withGst(100)).toBe(118);
+});</code></pre>
+<h3 id="asli-mysql-ke-saath-integration-tests-in-ci">Asli MySQL ke saath integration tests in CI</h3>
+<p>GitHub Actions job ke saath ek MySQL container chala sakta hai (<code>services</code>). Test khatam, container khatam. Prod ya dev DB ko chhoona bhi nahi padta.</p>
+<pre><code class="language-yaml">  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: myapp_test
+        ports: [&#39;3306:3306&#39;]
+        options: &gt;-
+          --health-cmd=&quot;mysqladmin ping -proot&quot;
+          --health-interval=5s --health-timeout=3s --health-retries=10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: myapp_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run migrate      # khaali test DB pe saari migrations
+      - run: npm test</code></pre>
+<p>Bonus fayda: har PR pe migrations ek khaali DB pe shuru se chalti hain, toh tooti migration prod tak pahunchne se pehle pakdi jaati hai.</p>
+<h3 id="pipeline-mein-aur-kya-check-karein">Pipeline mein aur kya check karein</h3>
+<table><thead><tr><th>Check</th><th>Command</th><th>Kya pakadta hai</th></tr></thead><tbody><tr><td>Lint</td><td><code>npx eslint .</code></td><td>Galat syntax, unused variables, bure patterns</td></tr><tr><td>Format</td><td><code>npx prettier --check .</code></td><td>Formatting jhagde</td></tr><tr><td>Security</td><td><code>npm audit --audit-level=high</code></td><td>Packages mein known vulnerabilities</td></tr><tr><td>Coverage</td><td><code>npx jest --coverage</code></td><td>Kitna code tests se cover hai</td></tr></tbody></table>
+<h2 id="15-monitoring-logs-aur-alerts">15. Monitoring, logs aur alerts</h2>
+<p>Deploy successful hone ka matlab ye nahi ki app theek chal raha hai. Monitoring wo aankhein hain jo deploy ke baad dekhti rehti hain, aur user ke complain karne se pehle tumhe bata deti hain.</p>
+<h3 id="teen-cheezein-jo-dekhni-hain">Teen cheezein jo dekhni hain</h3>
+<table><thead><tr><th>Kya</th><th>Sawaal</th><th>Tool (shuruaat ke liye)</th></tr></thead><tbody><tr><td>Logs</td><td>Kya hua?</td><td><code>pm2 logs</code>, AWS CloudWatch Logs</td></tr><tr><td>Metrics</td><td>Kitna? (CPU, memory, response time, error rate)</td><td><code>pm2 monit</code>, CloudWatch metrics</td></tr><tr><td>Uptime / alerts</td><td>Site chal rahi hai?</td><td>UptimeRobot, Better Stack, CloudWatch Alarms</td></tr><tr><td>Errors</td><td>Kaunsa error, kis line pe, kitni baar?</td><td>Sentry</td></tr></tbody></table>
+<h3 id="kaam-ke-pm2-commands">Kaam ke PM2 commands</h3>
+<pre><code class="language-bash">pm2 status            # sab apps ki halat
+pm2 logs myapp --lines 100
+pm2 monit             # live CPU / memory
+pm2 install pm2-logrotate   # logs se disk na bhare</code></pre>
+<h3 id="deploy-ki-notification">Deploy ki notification</h3>
+<p>Team ko pata hona chahiye ki kab kya deploy hua. <code>deploy</code> job ke end mein Slack / Discord webhook:</p>
+<pre><code class="language-yaml">      - name: Notify
+        if: always()
+        run: |
+          curl -s -X POST &quot;${{ secrets.SLACK_WEBHOOK }}&quot; \
+            -H &#39;Content-type: application/json&#39; \
+            -d &quot;{\&quot;text\&quot;:\&quot;${{ job.status }}: ${{ github.ref_name }} @ ${GITHUB_SHA::7} by ${{ github.actor }}\&quot;}&quot;</code></pre>
+<p><code>if: always()</code> ka matlab fail hone pe bhi message jayega.</p>
+<h3 id="dora-metrics-team-kitni-achhi-hai-kaise-naapein">DORA metrics: team kitni achhi hai, kaise naapein</h3>
+<p>Google ki DORA research ne 4 numbers diye hain jo batate hain ki delivery kitni healthy hai:</p>
+<table><thead><tr><th>Metric</th><th>Sawaal</th><th>Kaise badhaayein</th></tr></thead><tbody><tr><td>Deployment frequency</td><td>Kitni baar prod deploy karte ho?</td><td>Chhote PRs, automatic pipeline</td></tr><tr><td>Lead time for changes</td><td>Commit se prod tak kitna time?</td><td>Tez tests, kam manual steps</td></tr><tr><td>Change failure rate</td><td>Kitne % deploys se problem hui?</td><td>Achhe tests, staging, canary</td></tr><tr><td>Time to restore</td><td>Problem hone pe theek karne mein kitna time?</td><td>Auto rollback, monitoring, alerts</td></tr></tbody></table>
+<p>Pehle do speed naapte hain, aakhri do stability. Achhi teams dono mein achhi hoti hain: CI/CD se speed aur stability saath badhte hain, ek doosre ki keemat pe nahi.</p>
+<h2 id="16-troubleshooting-common-errors-aur-unke-fix">16. Troubleshooting: common errors aur unke fix</h2>
+<p>Pipeline fail ho toh Actions tab → fail hua run → laal step kholo. Error message ka pehla line aksar seedha batata hai kya galat hai. Neeche wale errors 90% cases cover karte hain.</p>
+<table><thead><tr><th>Error</th><th>Kahan</th><th>Wajah</th><th>Fix</th></tr></thead><tbody><tr><td><code>npm ci can only install with an existing package-lock.json</code></td><td>Test job</td><td>Lock file commit nahi hui</td><td><code>npm install</code> chala ke <code>package-lock.json</code> commit karo</td></tr><tr><td><code>Error: no test specified</code></td><td>Test job</td><td><code>package.json</code> mein npm ka default test script</td><td><code>&quot;test&quot;</code> script hatao ya asli tests likho</td></tr><tr><td><code>ssh: handshake failed</code> / <code>unable to authenticate</code></td><td>Deploy job</td><td>Galat private key, ya public key server pe nahi</td><td>Secret mein poori key (BEGIN-END) daalo; <code>authorized_keys</code> check karo</td></tr><tr><td><code>dial tcp ...:22: i/o timeout</code></td><td>Deploy job</td><td>Security Group mein port 22 band</td><td>EC2 → Security Group → inbound 22 kholo</td></tr><tr><td><code>Permission denied (publickey)</code></td><td>Server pe <code>git fetch</code></td><td>Deploy key nahi lagi ya <code>~/.ssh/config</code> galat</td><td>Section 9 ka Key 2 dobara karo; <code>ssh -T git@github.com</code> test</td></tr><tr><td><code>Host key verification failed</code></td><td>Server pe <code>git fetch</code></td><td>GitHub server ko pehchaanta nahi</td><td>Ek baar <code>ssh -T git@github.com</code> chala ke <code>yes</code> likho</td></tr><tr><td><code>APP_DIR missing</code></td><td><code>deploy.sh</code></td><td>Environment variable set nahi</td><td>GitHub → Environments → Variables mein <code>APP_DIR</code></td></tr><tr><td><code>fatal: not a git repository</code></td><td>Server</td><td><code>APP_DIR</code> galat ya clone nahi hua</td><td>Path check karo, repo clone karo</td></tr><tr><td><code>mysqldump: Access denied</code></td><td>Backup step</td><td><code>~/.my.cnf</code> nahi ya galat password</td><td>Section 18 checklist ke hisaab se <code>~/.my.cnf</code> banao, <code>chmod 600</code></td></tr><tr><td><code>PROCESS privilege</code> error</td><td>Backup step</td><td>MySQL 8 / RDS</td><td><code>--no-tablespaces</code> (script mein already hai)</td></tr><tr><td><code>[PM2] Process myapp not found</code></td><td>Reload step</td><td>App kabhi PM2 se start hi nahi hua</td><td>Server pe ek baar <code>pm2 start ... --name myapp &amp;&amp; pm2 save</code></td></tr><tr><td><code>JavaScript heap out of memory</code></td><td><code>npm ci</code> / build</td><td>Chhota EC2 (1 GB RAM)</td><td>Swap file banao ya bada instance</td></tr><tr><td>Health check fail, rollback hua</td><td>Deploy job</td><td>App crash ho raha hai</td><td>Server pe <code>pm2 logs myapp --lines 200</code> padho</td></tr><tr><td>Deployment &quot;Waiting&quot; pe atka</td><td>Deploy job</td><td>Production approval pending</td><td>Run kholo → Review deployments → Approve</td></tr><tr><td>Workflow chala hi nahi</td><td>-</td><td>File galat folder mein ya YAML mein indentation galat</td><td>Path <code>.github/workflows/</code>; YAML mein tabs nahi, sirf spaces</td></tr></tbody></table>
+<h3 id="debugging-tips">Debugging tips</h3>
+<ul><li><p>Kisi step ko detail mein dekhna ho toh repo secret <code>ACTIONS_STEP_DEBUG = true</code> banao; logs bahut detailed ho jaate hain.</p></li><li><p>Server pe script haath se chala ke dekho, wahi env values daal ke: <code>APP_DIR=/var/www/app BRANCH=develop SHA=$(git rev-parse origin/develop) PM2_APP=myapp bash scripts/deploy.sh</code></p></li><li><p>Local pe workflow test karne ke liye <code>act</code> tool (nektos/act) hai, chhote experiments ke liye kaam ka.</p></li></ul>
+<h2 id="17-pro-level-aage-kya-seekhein">17. Pro level: aage kya seekhein</h2>
+<p>Upar ka setup ek chhoti-medium team ke liye kaafi hai. Jaise app aur team badhe, ye 7 upgrades ek-ek karke lagao. Har ek kisi asli problem ko solve karta hai, isliye tabhi lagao jab wo problem aaye.</p>
+<table><thead><tr><th>Upgrade</th><th>Kaunsi problem solve karta hai</th><th>Mushkil</th></tr></thead><tbody><tr><td>Reusable workflows + composite actions</td><td>5 repos mein same YAML copy-paste</td><td>Aasaan</td></tr><tr><td>Matrix builds</td><td>Node 20 aur 22 dono pe test karna</td><td>Aasaan</td></tr><tr><td>Docker</td><td>&quot;Mere laptop pe chalta hai&quot;, server setup alag-alag</td><td>Medium</td></tr><tr><td>OIDC se AWS login</td><td>AWS access keys GitHub secrets mein padi hain</td><td>Medium</td></tr><tr><td>AWS SSM (SSH ki jagah)</td><td>Port 22 duniya ke liye khula hai</td><td>Medium</td></tr><tr><td>Infrastructure as Code (Terraform / CDK)</td><td>Servers haath se bane, dobara banana mushkil</td><td>Mushkil</td></tr><tr><td>Preview environments</td><td>Har PR ko alag URL pe dekhna hai</td><td>Mushkil</td></tr></tbody></table>
+<h3 id="matrix-build">Matrix build</h3>
+<pre><code class="language-yaml">  test:
+    strategy:
+      matrix:
+        node: [20, 22]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: &#39;${{ matrix.node }}&#39;, cache: npm }
+      - run: npm ci &amp;&amp; npm test</code></pre>
+<p>Ek job do baar chalegi, parallel mein, har Node version pe.</p>
+<h3 id="docker-build-once-run-anywhere">Docker: &quot;build once, run anywhere&quot;</h3>
+<p>Abhi har server pe <code>npm ci</code> alag chalta hai. Docker mein CI ek baar image banata hai, aur wahi exact image dev aur prod dono pe chalti hai.</p>
+<pre><code class="language-dockerfile">FROM node:22-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY . .
+EXPOSE 3000
+CMD [&quot;node&quot;, &quot;src/index.js&quot;]</code></pre>
+<p>Flow: CI image build → Amazon ECR mein push (tag = commit SHA) → server pe <code>docker pull</code> + restart, ya seedha ECS pe deploy. Rollback matlab purane SHA ka image chala do.</p>
+<h3 id="oidc-github-mein-aws-keys-ki-zaroorat-khatam">OIDC: GitHub mein AWS keys ki zaroorat khatam</h3>
+<p>AWS CLI use karna ho (S3, ECR, ECS) toh purana tareeka tha <code>AWS_ACCESS_KEY_ID</code> secret mein rakhna, jo kabhi expire nahi hota. OIDC mein GitHub har run ke liye AWS se ek temporary token leta hai jo kuch minute mein khatam ho jaata hai.</p>
+<pre><code class="language-yaml">permissions:
+  id-token: write
+  contents: read
+steps:
+  - uses: aws-actions/configure-aws-credentials@v4
+    with:
+      role-to-assume: arn:aws:iam::123456789012:role/github-deploy
+      aws-region: ap-south-1</code></pre>
+<p>AWS IAM mein ek role banta hai jo sirf tumhare repo aur <code>main</code> branch pe bharosa karta hai.</p>
+<h3 id="aws-ssm-bina-port-22-ke-deploy">AWS SSM: bina port 22 ke deploy</h3>
+<p>EC2 pe SSM Agent (Ubuntu / Amazon Linux mein pehle se hota hai) + IAM role lagao. Phir OIDC ke saath:</p>
+<pre><code class="language-bash">aws ssm send-command \
+  --instance-ids i-0abc123 \
+  --document-name AWS-RunShellScript \
+  --parameters &#39;commands=[&quot;sudo -u ubuntu bash /var/www/app/scripts/deploy.sh&quot;]&#39;</code></pre>
+<p>Port 22 Security Group se poori tarah band kar sakte ho, aur har command AWS CloudTrail mein log hoti hai.</p>
+<h3 id="infrastructure-as-code">Infrastructure as Code</h3>
+<p>EC2, Security Group, RDS, IAM roles sab ek code file mein (Terraform ya AWS CDK). Server bigad gaya toh <code>terraform apply</code> se 10 minute mein naya. Infrastructure ke changes bhi PR + review se hote hain, bilkul app code ki tarah.</p>
+<h3 id="preview-environments">Preview environments</h3>
+<p>Har PR ke liye ek temporary environment (<code>pr-42.dev.myapp.com</code>) jo PR band hote hi delete ho jaata hai. Docker + ECS ya Vercel / Render jaise platforms ke saath sabse aasaan banta hai.</p>
+<h2 id="18-setup-checklist-practice-aur-roadmap">18. Setup checklist, practice aur roadmap</h2>
+<p>Ye checklist upar se neeche tick karte jao; sab tick hone pe tumhari pipeline production-ready hai.</p>
+<h3 id="setup-checklist">Setup checklist</h3>
+<p><strong>Repo</strong></p>
+<ul><li data-checked="false"><p><input type="checkbox" disabled> <code>.github/workflows/deploy.yml</code> aur <code>scripts/deploy.sh</code> commit kiye</p></li><li data-checked="false"><p><input type="checkbox" disabled> <code>package-lock.json</code> commit hai</p></li><li data-checked="false"><p><input type="checkbox" disabled> <code>package.json</code> mein <code>migrate</code> script hai; default <code>test</code> script hatayi ya asli tests likhe</p></li><li data-checked="false"><p><input type="checkbox" disabled> <code>.env</code> <code>.gitignore</code> mein hai, <code>.env.example</code> repo mein hai</p></li><li data-checked="false"><p><input type="checkbox" disabled> App mein <code>/health</code> route hai</p></li><li data-checked="false"><p><input type="checkbox" disabled> <code>develop</code> branch bani hai</p></li></ul>
+<p><strong>Dono servers (dev + prod)</strong></p>
+<ul><li data-checked="false"><p><input type="checkbox" disabled> Node 22, git, mysql-client, PM2 install</p></li><li data-checked="false"><p><input type="checkbox" disabled> <code>gha_deploy.pub</code> <code>~/.ssh/authorized_keys</code> mein</p></li><li data-checked="false"><p><input type="checkbox" disabled> Server ki apni deploy key GitHub → Deploy keys mein; <code>ssh -T git@github.com</code> OK</p></li><li data-checked="false"><p><input type="checkbox" disabled> Repo <code>/var/www/app</code> mein clone, sahi branch pe</p></li><li data-checked="false"><p><input type="checkbox" disabled> <code>.env</code> bani hai</p></li><li data-checked="false"><p><input type="checkbox" disabled> App ek baar <code>pm2 start ... --name myapp</code>, phir <code>pm2 save</code> aur <code>pm2 startup</code></p></li><li data-checked="false"><p><input type="checkbox" disabled> Security Group mein port 22 khula, password login band</p></li></ul>
+<p><strong>Sirf prod server</strong></p>
+<ul><li data-checked="false"><p><input type="checkbox" disabled> <code>~/.my.cnf</code> (<code>[mysqldump]</code> section mein host, user, password), <code>chmod 600</code></p></li><li data-checked="false"><p><input type="checkbox" disabled> <code>mysqldump --no-tablespaces myapp_prod | head</code> chal raha hai</p></li></ul>
+<p><strong>GitHub</strong></p>
+<ul><li data-checked="false"><p><input type="checkbox" disabled> Environments <code>development</code> aur <code>production</code> bane</p></li><li data-checked="false"><p><input type="checkbox" disabled> Har environment mein secrets: <code>SSH_HOST</code>, <code>SSH_USER</code>, <code>SSH_PRIVATE_KEY</code></p></li><li data-checked="false"><p><input type="checkbox" disabled> Har environment mein variables: <code>APP_DIR</code>, <code>PM2_APP</code>, <code>HEALTH_URL</code>; prod mein <code>DB_NAME</code></p></li><li data-checked="false"><p><input type="checkbox" disabled> Production: Required reviewers + Deployment branches = <code>main</code></p></li><li data-checked="false"><p><input type="checkbox" disabled> Branch protection <code>main</code> aur <code>develop</code> pe</p></li></ul>
+<p><strong>DB</strong></p>
+<ul><li data-checked="false"><p><input type="checkbox" disabled> Baseline migration bani, dono DB mein &quot;already applied&quot; mark</p></li><li data-checked="false"><p><input type="checkbox" disabled> Ek test migration dev pe chal ke prod tak pahunchi</p></li></ul>
+<h3 id="practice-exercises-aasaan-se-mushkil">Practice exercises (aasaan se mushkil)</h3>
+<ol><li><p>Sirf <code>echo</code> wala &quot;Hello CI&quot; workflow banao aur Actions tab mein chalta dekho.</p></li><li><p>Jaan-boojh ke ek test fail karo, push karo. Dekho deploy job skip hoti hai.</p></li><li><p><code>develop</code> pe ek chhota text change push karo, dev server pe dikhna chahiye.</p></li><li><p>Nayi migration likho (<code>users</code> mein <code>phone</code> column), dev pe chalao, phir <code>main</code> tak le jao.</p></li><li><p><code>/health</code> ko jaan-boojh ke 500 return karwao, dev pe deploy karo, auto rollback dekho.</p></li><li><p>Prod ke latest backup ko ek <code>restore_check</code> DB mein restore karke dekho.</p></li><li><p>Workflow mein MySQL <code>services</code> container wale integration tests jodo.</p></li><li><p>Slack / Discord notification jodo.</p></li><li><p><code>node: [20, 22]</code> matrix lagao.</p></li><li><p>App ko Docker mein daalo aur image ECR mein push karo.</p></li></ol>
+<h3 id="learning-roadmap">Learning roadmap</h3>
+<table><thead><tr><th>Level</th><th>Kya aana chahiye</th><th>Is document mein</th></tr></thead><tbody><tr><td>Beginner</td><td>Git branches, PR, YAML basics, ek workflow chalana</td><td>Section 1-6</td></tr><tr><td>Intermediate</td><td>Environments, secrets, SSH deploy, migrations, rollback</td><td>Section 7-12</td></tr><tr><td>Advanced</td><td>Deployment strategies, testing with services, monitoring, DORA</td><td>Section 13-16</td></tr><tr><td>Pro</td><td>Docker, OIDC, SSM, IaC, preview environments</td><td>Section 17</td></tr></tbody></table>
+<p>Official docs jo bookmark karne layak hain: <a href="https://docs.github.com/en/actions">GitHub Actions docs</a>, <a href="https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment">Environments</a>, <a href="https://pm2.keymetrics.io/docs/usage/quick-start/">PM2 docs</a>, <a href="https://knexjs.org/guide/migrations.html">Knex migrations</a>.</p>
+
+</main>
+</body>
+</html>
